@@ -192,15 +192,7 @@ public class DBDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
     private List<EnvVar> getEnvVars(Trustify cr) {
         return Arrays.asList(
                 new EnvVarBuilder()
-                        .withName("POSTGRESQL_MAX_CONNECTIONS")
-                        .withValue("200")
-                        .build(),
-                new EnvVarBuilder()
-                        .withName("POSTGRESQL_MAX_PREPARED_TRANSACTIONS")
-                        .withValue("200")
-                        .build(),
-                new EnvVarBuilder()
-                        .withName("POSTGRESQL_USER")
+                        .withName("POSTGRES_USER")
                         .withNewValueFrom()
                         .withNewSecretKeyRef()
                         .withName(DBSecret.getSecretName(cr))
@@ -210,7 +202,7 @@ public class DBDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
                         .endValueFrom()
                         .build(),
                 new EnvVarBuilder()
-                        .withName("POSTGRESQL_PASSWORD")
+                        .withName("POSTGRES_PASSWORD")
                         .withNewValueFrom()
                         .withNewSecretKeyRef()
                         .withName(DBSecret.getSecretName(cr))
@@ -220,7 +212,7 @@ public class DBDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
                         .endValueFrom()
                         .build(),
                 new EnvVarBuilder()
-                        .withName("POSTGRESQL_DATABASE")
+                        .withName("POSTGRES_DB")
                         .withValue(Constants.DB_NAME)
                         .build()
         );
