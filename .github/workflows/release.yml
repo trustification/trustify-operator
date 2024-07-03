@@ -119,7 +119,7 @@ jobs:
         run: |
           version="${{ inputs.version }}"
           co_version="${version:0}"
-          operator_path="./operators/konveyor-operator/${co_version}"
+          operator_path="./operators/trustify-operator/${co_version}"
           mkdir -p "${operator_path}"
           docker cp extract:/metadata "${operator_path}"
           docker cp extract:/manifests "${operator_path}"
