@@ -43,6 +43,12 @@ import io.quarkiverse.operatorsdk.annotations.SharedCSVMetadata;
                 Trustify is vendor-neutral, thought-leadering, mostly informational collection of resources devoted to making Software Supply Chains easier to create, manage, consume and ultimately... to trust!
                 
                 
+                You can use Trustify for:
+                
+                - Store and Manage all the SBOM (Software Bill of Materials) files of your company.
+                - Understand which are the Vulnerabilities that affect each of your SBOM files
+                - Understand exactly which Packages are included/shipped within each SBOM
+                
                 Trustify is a project within the [Trustification community](https://trustification.io/).
                 
                 

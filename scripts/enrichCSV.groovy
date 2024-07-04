@@ -10,11 +10,12 @@ def fileReader = new FileReader(file)
 def yaml = new Yaml().load(fileReader)
 
 yaml.metadata.annotations.support = "https://github.com/trustification/trustify-operator/issues"
-yaml.metadata.annotations.description = "Trustify is makes Software Suppand ultimately easier to create, manage, consume."
+yaml.metadata.annotations.description = "An Operator for installing and managing Trustify"
 yaml.metadata.annotations.createdAt = LocalDate.now().toString()
 yaml.metadata.annotations.containerImage = yaml.spec.install.spec.deployments[0].spec.template.spec.containers[0].image
 
-yaml.spec.customresourcedefinitions.owned[0].description = "Trustify"
+yaml.spec.customresourcedefinitions.owned[0].description = "Represents a Trustify instance"
+yaml.spec.customresourcedefinitions.owned[0].displayName = "Trustify"
 
 // Adding cluster permissions to be able to fetch host domain
 yaml.spec.install.spec.clusterPermissions.rules[0][1] = [:]
