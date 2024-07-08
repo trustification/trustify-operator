@@ -154,3 +154,18 @@ metadata:
 spec: { }
 EOF
 ```
+
+# Kubernetes & OCP version compatibility
+
+| Red Hat OpenShift version | Kubernetes version |
+---------------------------|-------------------- 
+ 4.15                      | 1.28               
+ 4.14                      | 1.27               
+ 4.13                      | 1.26               
+ 4.12                      | 1.25               
+ 4.11                      | 1.24               
+ 4.10                      | 1.23               
+
+References:
+
+- [What version of the Kubernetes API is included with each OpenShift 4.x release? - Red Hat Customer Portal](https://access.redhat.com/solutions/4870701)
