@@ -97,7 +97,7 @@ import io.quarkiverse.operatorsdk.annotations.SharedCSVMetadata;
                 }]
                 """
         ),
-        minKubeVersion = "1.16.0"
+        minKubeVersion = "1.23.0"
 )
 public class TrustiCSVMetadata implements SharedCSVMetadata {
 }

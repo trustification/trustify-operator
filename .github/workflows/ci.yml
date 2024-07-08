@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        kubernetes_version: [ v1.22.17-k3s1, v1.23.17-k3s1, v1.24.17-k3s1, v1.25.16-k3s4, v1.26.15-k3s1, v1.27.15-k3s2, v1.28.11-k3s2 ]
+        kubernetes_version: [ v1.23.17-k3s1, v1.24.17-k3s1, v1.25.16-k3s4, v1.26.15-k3s1, v1.27.15-k3s2, v1.28.11-k3s2 ]
       fail-fast: false
     steps:
       - uses: actions/checkout@v3

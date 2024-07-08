@@ -18,7 +18,7 @@ source "$HOME/.sdkman/bin/sdkman-init.sh" && \
 sdk install java && \
 sdk install groovy && \
 groovy scripts/enrichCSV.groovy /code/target/bundle/trustify-operator/manifests/trustify-operator.clusterserviceversion.yaml && \
-echo '  com.redhat.openshift.versions: "v4.9"' >> /code/target/bundle/trustify-operator/metadata/annotations.yaml
+echo '  com.redhat.openshift.versions: "v4.10"' >> /code/target/bundle/trustify-operator/metadata/annotations.yaml
 
 FROM scratch
 # Core bundle labels.
