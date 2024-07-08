@@ -3,7 +3,7 @@ package org.trustify.operator.controllers.setup;
 import io.fabric8.kubernetes.client.Config;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
 import io.quarkus.kubernetes.client.runtime.KubernetesConfigProducer;
-import io.quarkus.tls.runtime.config.TlsConfig;
+import io.quarkus.runtime.TlsConfig;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.inject.Alternative;
 import jakarta.enterprise.inject.Produces;
