@@ -1,9 +1,6 @@
 package org.trustify.operator.cdrs.v2alpha1.server;
 
-import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.kubernetes.api.model.ServiceBuilder;
-import io.fabric8.kubernetes.api.model.ServiceSpec;
-import io.fabric8.kubernetes.api.model.ServiceSpecBuilder;
+import io.fabric8.kubernetes.api.model.*;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
@@ -49,10 +46,18 @@ public class ServerService extends CRUDKubernetesDependentResource<Service, Trus
 
     private ServiceSpec getServiceSpec(Trustify cr) {
         return new ServiceSpecBuilder()
-                .addNewPort()
-                .withPort(getServicePort(cr))
-                .withProtocol(Constants.SERVICE_PROTOCOL)
-                .endPort()
+                .withPorts(
+                        new ServicePortBuilder()
+                                .withName("http")
+                                .withPort(getServicePort(cr))
+                                .withProtocol(Constants.SERVICE_PROTOCOL)
+                                .build(),
+                        new ServicePortBuilder()
+                                .withName("http-infra")
+                                .withPort(getServiceInfraestructurePort(cr))
+                                .withProtocol(Constants.SERVICE_PROTOCOL)
+                                .build()
+                )
                 .withSelector(Constants.SERVER_SELECTOR_LABELS)
                 .withType("ClusterIP")
                 .build();
@@ -60,6 +65,10 @@ public class ServerService extends CRUDKubernetesDependentResource<Service, Trus
 
     public static int getServicePort(Trustify cr) {
         return Constants.HTTP_PORT;
+    }
+
+    public static int getServiceInfraestructurePort(Trustify cr) {
+        return Constants.HTTP_INFRAESTRUCTURE_PORT;
     }
 
     public static String getServiceName(Trustify cr) {

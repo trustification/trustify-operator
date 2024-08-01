@@ -24,6 +24,7 @@ public class Constants {
     //
     public static final Integer HTTP_PORT = 8080;
     public static final Integer HTTPS_PORT = 8443;
+    public static final Integer HTTP_INFRAESTRUCTURE_PORT = 9010;
     public static final String SERVICE_PROTOCOL = "TCP";
 
     //
