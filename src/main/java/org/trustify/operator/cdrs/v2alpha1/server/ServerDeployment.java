@@ -109,6 +109,7 @@ public class ServerDeployment extends CRUDKubernetesDependentResource<Deployment
                 .orElse(null);
 
         return new DeploymentSpecBuilder()
+                .withMinReadySeconds(2)
                 .withStrategy(new DeploymentStrategyBuilder()
                         .withType("Recreate")
                         .build()

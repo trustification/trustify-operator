@@ -142,7 +142,7 @@ public class TrustifyReconcilerTest {
                             .toList();
                     Assertions.assertTrue(webContainerPorts.contains(8080), "Server container port 8080 not found");
 
-                    Assertions.assertEquals(1, serverDeployment.getStatus().getReadyReplicas(), "Expected Server deployment number of replicas doesn't match");
+                    Assertions.assertEquals(1, serverDeployment.getStatus().getAvailableReplicas(), "Expected Server deployment number of replicas doesn't match");
 
                     // Server service
                     final var serverService = client.services()
