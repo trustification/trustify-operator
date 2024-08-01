@@ -73,13 +73,19 @@ public class TrustifyReconciler implements Reconciler<Trustify>, ContextInitiali
                             logger.infof("Trustify {} is ready to be used", cr.getMetadata().getName());
                         }
 
-                        TrustifyStatusCondition updatedCondition = new TrustifyStatusCondition(TrustifyStatusCondition.AVAILABLE, true);
-                        cr.getStatus().setCondition(updatedCondition);
+                        TrustifyStatusCondition status = new TrustifyStatusCondition();
+                        status.setType(TrustifyStatusCondition.Successful);
+                        status.setStatus(true);
+
+                        cr.getStatus().setCondition(status);
 
                         return UpdateControl.updateStatus(cr);
                     } else {
-                        TrustifyStatusCondition updatedCondition = new TrustifyStatusCondition(TrustifyStatusCondition.PROCESSING, true);
-                        cr.getStatus().setCondition(updatedCondition);
+                        TrustifyStatusCondition status = new TrustifyStatusCondition();
+                        status.setType(TrustifyStatusCondition.PROCESSING);
+                        status.setStatus(true);
+
+                        cr.getStatus().setCondition(status);
 
                         final var duration = Duration.ofSeconds(5);
                         return UpdateControl.updateStatus(cr).rescheduleAfter(duration);
