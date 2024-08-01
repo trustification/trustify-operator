@@ -20,6 +20,7 @@ import org.trustify.operator.utils.CRDUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -97,8 +98,8 @@ public class ServerDeployment extends CRUDKubernetesDependentResource<Deployment
                 .getMandatory(Constants.CONTEXT_LABELS_KEY, Map.class);
 
         Map<String, String> selectorLabels = Constants.SERVER_SELECTOR_LABELS;
-        String image = config.serverImage();
-        String imagePullPolicy = config.imagePullPolicy();
+        String image = Optional.ofNullable(cr.getSpec().serverImage()).orElse(config.serverImage());
+        String imagePullPolicy = Optional.ofNullable(cr.getSpec().imagePullPolicy()).orElse(config.imagePullPolicy());
 
         List<EnvVar> envVars = distConfigurator.getAllEnvVars();
         List<Volume> volumes = distConfigurator.getAllVolumes();

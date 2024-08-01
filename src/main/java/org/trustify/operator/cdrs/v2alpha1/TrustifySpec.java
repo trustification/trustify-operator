@@ -7,6 +7,12 @@ import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import java.util.List;
 
 public record TrustifySpec(
+        @JsonPropertyDescription("Custom Trustify Server image to be used. For internal use only")
+        String serverImage,
+
+        @JsonPropertyDescription("Custom Image Pull Policy for images managed by the Operator")
+        String imagePullPolicy,
+
         @JsonPropertyDescription("Secret(s) that might be used when pulling an image from a private container image registry or repository.")
         List<LocalObjectReference> imagePullSecrets,
 
@@ -29,6 +35,8 @@ public record TrustifySpec(
 
     public TrustifySpec() {
         this(
+                null,
+                null,
                 null,
                 null,
                 null,
