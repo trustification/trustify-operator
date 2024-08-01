@@ -1,4 +1,4 @@
-package org.trustify.operator.cdrs.v2alpha1.api;
+package org.trustify.operator.cdrs.v2alpha1.server;
 
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -9,10 +9,10 @@ import org.trustify.operator.cdrs.v2alpha1.Trustify;
 
 import java.util.Optional;
 
-public class ApiStoragePersistentVolumeClaimDiscriminator implements ResourceDiscriminator<PersistentVolumeClaim, Trustify> {
+public class ServerStoragePersistentVolumeClaimDiscriminator implements ResourceDiscriminator<PersistentVolumeClaim, Trustify> {
     @Override
     public Optional<PersistentVolumeClaim> distinguish(Class<PersistentVolumeClaim> resource, Trustify cr, Context<Trustify> context) {
-        String persistentVolumeClaimName = ApiStoragePersistentVolumeClaim.getPersistentVolumeClaimName(cr);
+        String persistentVolumeClaimName = ServerStoragePersistentVolumeClaim.getPersistentVolumeClaimName(cr);
         ResourceID resourceID = new ResourceID(persistentVolumeClaimName, cr.getMetadata().getNamespace());
         var informerEventSource = (InformerEventSource<PersistentVolumeClaim, Trustify>) context.eventSourceRetriever().getResourceEventSourceFor(PersistentVolumeClaim.class);
         return informerEventSource.get(resourceID);

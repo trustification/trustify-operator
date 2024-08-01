@@ -12,10 +12,10 @@ import io.javaoperatorsdk.operator.processing.event.source.informer.InformerEven
 import org.jboss.logging.Logger;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifyStatusCondition;
-import org.trustify.operator.cdrs.v2alpha1.api.ApiDeployment;
-import org.trustify.operator.cdrs.v2alpha1.api.ApiIngress;
-import org.trustify.operator.cdrs.v2alpha1.api.ApiIngressSecure;
-import org.trustify.operator.cdrs.v2alpha1.api.ApiService;
+import org.trustify.operator.cdrs.v2alpha1.server.ServerDeployment;
+import org.trustify.operator.cdrs.v2alpha1.server.ServerIngress;
+import org.trustify.operator.cdrs.v2alpha1.server.ServerIngressSecure;
+import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
 import org.trustify.operator.cdrs.v2alpha1.db.DBDeployment;
 import org.trustify.operator.cdrs.v2alpha1.db.DBPersistentVolumeClaim;
 import org.trustify.operator.cdrs.v2alpha1.db.DBSecret;
@@ -35,11 +35,11 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
                 @Dependent(name = "db-deployment", type = DBDeployment.class, dependsOn = {"db-pvc", "db-secret"}, readyPostcondition = DBDeployment.class, useEventSourceWithName = TrustifyReconciler.DEPLOYMENT_EVENT_SOURCE),
                 @Dependent(name = "db-service", type = DBService.class, dependsOn = {"db-deployment"}, useEventSourceWithName = TrustifyReconciler.SERVICE_EVENT_SOURCE),
 
-                @Dependent(name = "server-deployment", type = ApiDeployment.class, dependsOn = {"db-service"}, readyPostcondition = ApiDeployment.class, useEventSourceWithName = TrustifyReconciler.DEPLOYMENT_EVENT_SOURCE),
-                @Dependent(name = "server-service", type = ApiService.class, dependsOn = {"db-service"}, useEventSourceWithName = TrustifyReconciler.SERVICE_EVENT_SOURCE),
+                @Dependent(name = "server-deployment", type = ServerDeployment.class, dependsOn = {"db-service"}, readyPostcondition = ServerDeployment.class, useEventSourceWithName = TrustifyReconciler.DEPLOYMENT_EVENT_SOURCE),
+                @Dependent(name = "server-service", type = ServerService.class, dependsOn = {"db-service"}, useEventSourceWithName = TrustifyReconciler.SERVICE_EVENT_SOURCE),
 
-                @Dependent(name = "ingress", type = ApiIngress.class, dependsOn = {"db-service"}, readyPostcondition = ApiIngress.class, useEventSourceWithName = TrustifyReconciler.INGRESS_EVENT_SOURCE),
-                @Dependent(name = "ingress-secure", type = ApiIngressSecure.class, dependsOn = {"db-service"}, readyPostcondition = ApiIngressSecure.class, useEventSourceWithName = TrustifyReconciler.INGRESS_EVENT_SOURCE)
+                @Dependent(name = "ingress", type = ServerIngress.class, dependsOn = {"db-service"}, readyPostcondition = ServerIngress.class, useEventSourceWithName = TrustifyReconciler.INGRESS_EVENT_SOURCE),
+                @Dependent(name = "ingress-secure", type = ServerIngressSecure.class, dependsOn = {"db-service"}, readyPostcondition = ServerIngressSecure.class, useEventSourceWithName = TrustifyReconciler.INGRESS_EVENT_SOURCE)
         }
 )
 public class TrustifyReconciler implements Reconciler<Trustify>, ContextInitializer<Trustify>,

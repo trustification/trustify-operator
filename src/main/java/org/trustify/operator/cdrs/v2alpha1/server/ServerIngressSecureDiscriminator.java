@@ -1,4 +1,4 @@
-package org.trustify.operator.cdrs.v2alpha1.api;
+package org.trustify.operator.cdrs.v2alpha1.server;
 
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -9,10 +9,10 @@ import org.trustify.operator.cdrs.v2alpha1.Trustify;
 
 import java.util.Optional;
 
-public class ApiIngressSecureDiscriminator implements ResourceDiscriminator<Ingress, Trustify> {
+public class ServerIngressSecureDiscriminator implements ResourceDiscriminator<Ingress, Trustify> {
     @Override
     public Optional<Ingress> distinguish(Class<Ingress> resource, Trustify cr, Context<Trustify> context) {
-        String ingressName = ApiIngressSecure.getIngressName(cr);
+        String ingressName = ServerIngressSecure.getIngressName(cr);
         ResourceID resourceID = new ResourceID(ingressName, cr.getMetadata().getNamespace());
         var informerEventSource = (InformerEventSource<Ingress, Trustify>) context.eventSourceRetriever().getResourceEventSourceFor(Ingress.class);
         return informerEventSource.get(resourceID);

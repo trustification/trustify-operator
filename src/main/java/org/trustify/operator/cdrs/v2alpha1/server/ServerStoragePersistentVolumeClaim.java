@@ -1,4 +1,4 @@
-package org.trustify.operator.cdrs.v2alpha1.api;
+package org.trustify.operator.cdrs.v2alpha1.server;
 
 import io.fabric8.kubernetes.api.model.*;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -12,14 +12,14 @@ import org.trustify.operator.utils.CRDUtils;
 
 import java.util.Map;
 
-@KubernetesDependent(labelSelector = ApiStoragePersistentVolumeClaim.LABEL_SELECTOR, resourceDiscriminator = ApiStoragePersistentVolumeClaimDiscriminator.class)
+@KubernetesDependent(labelSelector = ServerStoragePersistentVolumeClaim.LABEL_SELECTOR, resourceDiscriminator = ServerStoragePersistentVolumeClaimDiscriminator.class)
 @ApplicationScoped
-public class ApiStoragePersistentVolumeClaim extends CRUDKubernetesDependentResource<PersistentVolumeClaim, Trustify>
+public class ServerStoragePersistentVolumeClaim extends CRUDKubernetesDependentResource<PersistentVolumeClaim, Trustify>
         implements Creator<PersistentVolumeClaim, Trustify> {
 
     public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=server";
 
-    public ApiStoragePersistentVolumeClaim() {
+    public ServerStoragePersistentVolumeClaim() {
         super(PersistentVolumeClaim.class);
     }
 

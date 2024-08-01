@@ -5,8 +5,8 @@ import io.quarkus.logging.Log;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
-import org.trustify.operator.cdrs.v2alpha1.api.ApiService;
-import org.trustify.operator.cdrs.v2alpha1.api.ApiStoragePersistentVolumeClaim;
+import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
+import org.trustify.operator.cdrs.v2alpha1.server.ServerStoragePersistentVolumeClaim;
 import org.trustify.operator.cdrs.v2alpha1.db.DBSecret;
 import org.trustify.operator.cdrs.v2alpha1.db.DBService;
 
@@ -68,7 +68,7 @@ public class TrustifyDistConfigurator {
         final String certFileOptionName = "HTTP_SERVER_TLS_CERTIFICATE_FILE";
         final String keyFileOptionName = "HTTP_SERVER_TLS_KEY_FILE";
 
-        if (!ApiService.isTlsConfigured(cr)) {
+        if (!ServerService.isTlsConfigured(cr)) {
             // for mapping and triggering warning in status if someone uses the fields directly
             optionMapper.mapOption(certFileOptionName);
             optionMapper.mapOption(keyFileOptionName);
@@ -118,7 +118,7 @@ public class TrustifyDistConfigurator {
         var volume = new VolumeBuilder()
                 .withName("trustify-pvol")
                 .withPersistentVolumeClaim(new PersistentVolumeClaimVolumeSourceBuilder()
-                        .withClaimName(ApiStoragePersistentVolumeClaim.getPersistentVolumeClaimName(cr))
+                        .withClaimName(ServerStoragePersistentVolumeClaim.getPersistentVolumeClaimName(cr))
                         .build()
                 )
                 .build();

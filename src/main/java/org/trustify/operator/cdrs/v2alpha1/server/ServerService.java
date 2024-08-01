@@ -1,4 +1,4 @@
-package org.trustify.operator.cdrs.v2alpha1.api;
+package org.trustify.operator.cdrs.v2alpha1.server;
 
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceBuilder;
@@ -15,13 +15,13 @@ import org.trustify.operator.utils.CRDUtils;
 
 import java.util.Map;
 
-@KubernetesDependent(labelSelector = ApiService.LABEL_SELECTOR, resourceDiscriminator = ApiServiceDiscriminator.class)
+@KubernetesDependent(labelSelector = ServerService.LABEL_SELECTOR, resourceDiscriminator = ServerServiceDiscriminator.class)
 @ApplicationScoped
-public class ApiService extends CRUDKubernetesDependentResource<Service, Trustify> {
+public class ServerService extends CRUDKubernetesDependentResource<Service, Trustify> {
 
     public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=server";
 
-    public ApiService() {
+    public ServerService() {
         super(Service.class);
     }
 
