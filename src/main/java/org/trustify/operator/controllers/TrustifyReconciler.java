@@ -11,6 +11,7 @@ import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 import io.javaoperatorsdk.operator.processing.event.source.informer.InformerEventSource;
 import org.jboss.logging.Logger;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
+import org.trustify.operator.cdrs.v2alpha1.TrustifyStatusCondition;
 import org.trustify.operator.cdrs.v2alpha1.api.ApiDeployment;
 import org.trustify.operator.cdrs.v2alpha1.api.ApiIngress;
 import org.trustify.operator.cdrs.v2alpha1.api.ApiIngressSecure;
@@ -68,10 +69,20 @@ public class TrustifyReconciler implements Reconciler<Trustify>, ContextInitiali
                 .getWorkflowReconcileResult()
                 .map(wrs -> {
                     if (wrs.allDependentResourcesReady()) {
-                        return UpdateControl.<Trustify>noUpdate();
+                        if (cr.getStatus().isAvailable()) {
+                            logger.infof("Trustify {} is ready to be used", cr.getMetadata().getName());
+                        }
+
+                        TrustifyStatusCondition updatedCondition = new TrustifyStatusCondition(TrustifyStatusCondition.AVAILABLE, true);
+                        cr.getStatus().setCondition(updatedCondition);
+
+                        return UpdateControl.updateStatus(cr);
                     } else {
+                        TrustifyStatusCondition updatedCondition = new TrustifyStatusCondition(TrustifyStatusCondition.PROCESSING, true);
+                        cr.getStatus().setCondition(updatedCondition);
+
                         final var duration = Duration.ofSeconds(5);
-                        return UpdateControl.<Trustify>noUpdate().rescheduleAfter(duration);
+                        return UpdateControl.updateStatus(cr).rescheduleAfter(duration);
                     }
                 })
                 .orElseThrow();
