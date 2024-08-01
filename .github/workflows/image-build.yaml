@@ -14,12 +14,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract tag
+        id: extract_tag
+        run: |
+          tag=$(if [[ ${{github.ref_name}} == v* ]];then echo "${{github.ref_name}}"; else echo "latest"; fi)
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+    outputs:
+      tag: ${{ steps.extract_tag.outputs.tag }}
+
   operator-build:
     uses: trustification/release-tools/.github/workflows/build-push-images.yaml@main
     with:
       registry: "ghcr.io"
       image_name: "${{ github.repository_owner }}/trustify-operator"
-      containerfile: "./Containerfile"
+      containerfile: "./Dockerfile"
       architectures: '[ "amd64" ]'
     secrets:
       registry_username: ${{ github.actor }}
@@ -28,13 +39,14 @@ jobs:
   bundle-build:
     uses: trustification/release-tools/.github/workflows/build-push-images.yaml@main
     needs:
+      - prepare
       - operator-build
     with:
       registry: "ghcr.io"
       image_name: "${{ github.repository_owner }}/trustify-operator-bundle"
-      containerfile: "./bundle.Containerfile"
+      containerfile: "./bundle.Dockerfile"
       architectures: '[ "amd64" ]'
-      extra-args: "--build-arg IMAGE_GROUP=${{ github.repository_owner }}"
+      extra-args: "--build-arg IMAGE_GROUP=${{ github.repository_owner }} --build-arg IMAGE_TAG=${{ needs.prepare.outputs.tag }}"
     secrets:
       registry_username: ${{ github.actor }}
       registry_password: ${{ secrets.GITHUB_TOKEN }}
@@ -42,6 +54,7 @@ jobs:
   catalog-build:
     runs-on: ubuntu-latest
     needs:
+      - prepare
       - bundle-build
     steps:
       - name: Setup OLM CLIs
@@ -54,24 +67,20 @@ jobs:
           curl -LO ${OPERATOR_SDK_DL_URL}/${OS}-${ARCH}-opm
           chmod +x ${OS}-${ARCH}-opm && sudo mv ${OS}-${ARCH}-opm /usr/local/bin/opm
 
-      - name: Extract tag
-        id: extract_tag
-        run: |
-          tag=$(if [[ ${{github.ref_name}} == v* ]];then echo "${{github.ref_name}}"; else echo "latest"; fi)
-          echo "TAG=$tag" >> $GITHUB_ENV
-
       - name: Create catalog
         run: |
           opm index add \
-            --bundles ghcr.io/${{ github.repository_owner }}/trustify-operator-bundle:${{ env.TAG }} \
-            --tag ${{ github.repository_owner }}/trustify-operator-catalog:${{ env.TAG }} \
+            --bundles ghcr.io/${{ github.repository_owner }}/trustify-operator-bundle:$TAG \
+            --tag ${{ github.repository_owner }}/trustify-operator-catalog:$TAG \
             --build-tool podman
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
 
       - name: Push To Registry
         uses: redhat-actions/push-to-registry@v2
         with:
           image: ${{ github.repository_owner }}/trustify-operator-catalog
-          tags: ${{ env.TAG }}
+          tags: ${{ needs.prepare.outputs.tag }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: "ghcr.io"

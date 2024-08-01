@@ -1,5 +1,6 @@
 FROM quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21 AS build
 ARG IMAGE_GROUP
+ARG IMAGE_TAG
 COPY --chown=quarkus:quarkus mvnw /code/mvnw
 COPY --chown=quarkus:quarkus .mvn /code/.mvn
 COPY --chown=quarkus:quarkus pom.xml /code/
@@ -7,7 +8,7 @@ USER quarkus
 WORKDIR /code
 RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.1.2:go-offline
 COPY src/main /code/src/main
-RUN ./mvnw package -DskipTests -Dquarkus.container-image.group=$IMAGE_GROUP
+RUN ./mvnw package -DskipTests -Dquarkus.container-image.group=$IMAGE_GROUP -Dquarkus.container-image.tag=$IMAGE_TAG
 
 FROM registry.access.redhat.com/ubi9/ubi:latest as bundle
 COPY scripts /scripts
