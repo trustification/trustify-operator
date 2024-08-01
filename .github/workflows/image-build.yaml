@@ -31,7 +31,7 @@ jobs:
       registry: "ghcr.io"
       image_name: "${{ github.repository_owner }}/trustify-operator"
       containerfile: "./Dockerfile"
-      architectures: '[ "amd64" ]'
+      architectures: '[ "arm64" ]'
     secrets:
       registry_username: ${{ github.actor }}
       registry_password: ${{ secrets.GITHUB_TOKEN }}
@@ -45,7 +45,7 @@ jobs:
       registry: "ghcr.io"
       image_name: "${{ github.repository_owner }}/trustify-operator-bundle"
       containerfile: "./bundle.Dockerfile"
-      architectures: '[ "amd64" ]'
+      architectures: '[ "amd64", "arm64" ]'
       extra-args: "--build-arg IMAGE_GROUP=${{ github.repository_owner }} --build-arg IMAGE_TAG=${{ needs.prepare.outputs.tag }}"
     secrets:
       registry_username: ${{ github.actor }}
