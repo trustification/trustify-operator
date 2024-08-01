@@ -34,7 +34,7 @@ public class TrustifyStatus {
     @JsonIgnore
     public boolean isAvailable() {
         return this.conditions.stream()
-                .anyMatch(item -> item.getType().equals(TrustifyStatusCondition.Successful) && Objects.equals(item.getStatus(), true));
+                .anyMatch(item -> item.getType().equals(TrustifyStatusCondition.SUCCESSFUL) && Objects.equals(item.getStatus(), true));
     }
 
     @Override

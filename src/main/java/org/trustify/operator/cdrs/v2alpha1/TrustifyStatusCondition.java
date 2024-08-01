@@ -7,7 +7,7 @@ import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TrustifyStatusCondition {
-    public static final String Successful = "Successful";
+    public static final String SUCCESSFUL = "Successful";
     public static final String PROCESSING = "Processing";
     public static final String DEGRADED = "Degraded";
 

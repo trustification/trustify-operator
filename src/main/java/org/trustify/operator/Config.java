@@ -6,8 +6,8 @@ import io.smallrye.config.WithName;
 @ConfigMapping(prefix = "related.image")
 public interface Config {
 
-    @WithName("api")
-    String apiImage();
+    @WithName("server")
+    String serverImage();
 
     @WithName("db")
     String dbImage();

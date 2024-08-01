@@ -17,7 +17,7 @@ import java.util.Map;
 @ApplicationScoped
 public class ApiIngress extends ApiIngressBase {
 
-    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=api,component-variant=http";
+    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=server,component-variant=http";
 
     @Override
     @SuppressWarnings("unchecked")
@@ -27,7 +27,7 @@ public class ApiIngress extends ApiIngressBase {
                 context,
                 getIngressName(cr),
                 Map.of(
-                        "component", "api",
+                        "component", "server",
                         "component-variant", "http"
                 ),
                 Map.of(

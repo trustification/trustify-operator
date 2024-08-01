@@ -32,7 +32,7 @@ public class TrustifyReconcilerTest {
     @ConfigProperty(name = "related.image.db")
     String dbImage;
 
-    @ConfigProperty(name = "related.image.api")
+    @ConfigProperty(name = "related.image.server")
     String apiImage;
 
     @Inject

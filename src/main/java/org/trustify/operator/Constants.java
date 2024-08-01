@@ -10,15 +10,15 @@ public class Constants {
 
     //
     public static final String TRUSTI_NAME = "trustify";
-    public static final String TRUSTI_API_NAME = "trustify-api";
+    public static final String TRUSTI_SERVER_NAME = "trustify-server";
     public static final String TRUSTI_DB_NAME = "trustify-db";
 
     //
     public static final Map<String, String> DB_SELECTOR_LABELS = Map.of(
             "trustify-operator/group", "db"
     );
-    public static final Map<String, String> API_SELECTOR_LABELS = Map.of(
-            "trustify-operator/group", "api"
+    public static final Map<String, String> SERVER_SELECTOR_LABELS = Map.of(
+            "trustify-operator/group", "server"
     );
 
     //
@@ -32,12 +32,12 @@ public class Constants {
     public static final String DB_DEPLOYMENT_SUFFIX = "-" + TRUSTI_DB_NAME + "-deployment";
     public static final String DB_SERVICE_SUFFIX = "-" + TRUSTI_DB_NAME + "-service";
 
-    public static final String API_DEPLOYMENT_SUFFIX = "-" + TRUSTI_API_NAME + "-deployment";
-    public static final String API_SERVICE_SUFFIX = "-" + TRUSTI_API_NAME + "-service";
+    public static final String SERVER_DEPLOYMENT_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-deployment";
+    public static final String SERVER_SERVICE_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-service";
 
 
-    public static final String INGRESS_SUFFIX = "-" + TRUSTI_API_NAME + "-ingress";
-    public static final String INGRESS_SECURE_SUFFIX = "-" + TRUSTI_API_NAME + "-secure-ingress";
+    public static final String INGRESS_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-ingress";
+    public static final String INGRESS_SECURE_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-secure-ingress";
 
     //
     public static final String DB_SECRET_USERNAME = "username";

@@ -17,7 +17,7 @@ import java.util.Map;
 public class ApiStoragePersistentVolumeClaim extends CRUDKubernetesDependentResource<PersistentVolumeClaim, Trustify>
         implements Creator<PersistentVolumeClaim, Trustify> {
 
-    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=api";
+    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=server";
 
     public ApiStoragePersistentVolumeClaim() {
         super(PersistentVolumeClaim.class);
@@ -40,7 +40,7 @@ public class ApiStoragePersistentVolumeClaim extends CRUDKubernetesDependentReso
                 .withName(getPersistentVolumeClaimName(cr))
                 .withNamespace(cr.getMetadata().getNamespace())
                 .withLabels(labels)
-                .addToLabels("component", "api")
+                .addToLabels("component", "server")
                 .withOwnerReferences(CRDUtils.getOwnerReference(cr))
                 .endMetadata()
                 .withSpec(new PersistentVolumeClaimSpecBuilder()

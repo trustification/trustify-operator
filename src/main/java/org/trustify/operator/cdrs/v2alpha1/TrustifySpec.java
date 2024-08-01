@@ -22,9 +22,9 @@ public record TrustifySpec(
         @JsonPropertyDescription("In this section you can configure features related to HTTP and HTTPS")
         HttpSpec httpSpec,
 
-        @JsonProperty("apiResourceLimits")
-        @JsonPropertyDescription("In this section you can configure resource limits settings for the API.")
-        ResourcesLimitSpec apiResourceLimitSpec
+        @JsonProperty("serverResourceLimits")
+        @JsonPropertyDescription("In this section you can configure resource limits settings for the Server.")
+        ResourcesLimitSpec serverResourceLimitSpec
 ) {
 
     public TrustifySpec() {

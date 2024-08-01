@@ -35,8 +35,8 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
                 @Dependent(name = "db-deployment", type = DBDeployment.class, dependsOn = {"db-pvc", "db-secret"}, readyPostcondition = DBDeployment.class, useEventSourceWithName = TrustifyReconciler.DEPLOYMENT_EVENT_SOURCE),
                 @Dependent(name = "db-service", type = DBService.class, dependsOn = {"db-deployment"}, useEventSourceWithName = TrustifyReconciler.SERVICE_EVENT_SOURCE),
 
-                @Dependent(name = "api-deployment", type = ApiDeployment.class, dependsOn = {"db-service"}, readyPostcondition = ApiDeployment.class, useEventSourceWithName = TrustifyReconciler.DEPLOYMENT_EVENT_SOURCE),
-                @Dependent(name = "api-service", type = ApiService.class, dependsOn = {"db-service"}, useEventSourceWithName = TrustifyReconciler.SERVICE_EVENT_SOURCE),
+                @Dependent(name = "server-deployment", type = ApiDeployment.class, dependsOn = {"db-service"}, readyPostcondition = ApiDeployment.class, useEventSourceWithName = TrustifyReconciler.DEPLOYMENT_EVENT_SOURCE),
+                @Dependent(name = "server-service", type = ApiService.class, dependsOn = {"db-service"}, useEventSourceWithName = TrustifyReconciler.SERVICE_EVENT_SOURCE),
 
                 @Dependent(name = "ingress", type = ApiIngress.class, dependsOn = {"db-service"}, readyPostcondition = ApiIngress.class, useEventSourceWithName = TrustifyReconciler.INGRESS_EVENT_SOURCE),
                 @Dependent(name = "ingress-secure", type = ApiIngressSecure.class, dependsOn = {"db-service"}, readyPostcondition = ApiIngressSecure.class, useEventSourceWithName = TrustifyReconciler.INGRESS_EVENT_SOURCE)
@@ -74,7 +74,7 @@ public class TrustifyReconciler implements Reconciler<Trustify>, ContextInitiali
                         }
 
                         TrustifyStatusCondition status = new TrustifyStatusCondition();
-                        status.setType(TrustifyStatusCondition.Successful);
+                        status.setType(TrustifyStatusCondition.SUCCESSFUL);
                         status.setStatus(true);
 
                         cr.getStatus().setCondition(status);

@@ -19,7 +19,7 @@ import java.util.Map;
 @ApplicationScoped
 public class ApiService extends CRUDKubernetesDependentResource<Service, Trustify> {
 
-    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=api";
+    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=server";
 
     public ApiService() {
         super(Service.class);
@@ -40,7 +40,7 @@ public class ApiService extends CRUDKubernetesDependentResource<Service, Trustif
                 .withName(getServiceName(cr))
                 .withNamespace(cr.getMetadata().getNamespace())
                 .withLabels(labels)
-                .addToLabels("component", "api")
+                .addToLabels("component", "server")
                 .withOwnerReferences(CRDUtils.getOwnerReference(cr))
                 .endMetadata()
                 .withSpec(getServiceSpec(cr))
@@ -53,7 +53,7 @@ public class ApiService extends CRUDKubernetesDependentResource<Service, Trustif
                 .withPort(getServicePort(cr))
                 .withProtocol(Constants.SERVICE_PROTOCOL)
                 .endPort()
-                .withSelector(Constants.API_SELECTOR_LABELS)
+                .withSelector(Constants.SERVER_SELECTOR_LABELS)
                 .withType("ClusterIP")
                 .build();
     }
@@ -63,7 +63,7 @@ public class ApiService extends CRUDKubernetesDependentResource<Service, Trustif
     }
 
     public static String getServiceName(Trustify cr) {
-        return cr.getMetadata().getName() + Constants.API_SERVICE_SUFFIX;
+        return cr.getMetadata().getName() + Constants.SERVER_SERVICE_SUFFIX;
     }
 
     public static boolean isTlsConfigured(Trustify cr) {

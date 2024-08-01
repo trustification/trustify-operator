@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 public class ApiDeployment extends CRUDKubernetesDependentResource<Deployment, Trustify>
         implements Matcher<Deployment, Trustify>, Condition<Deployment, Trustify> {
 
-    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=api";
+    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=server";
 
     @Inject
     Config config;
@@ -80,7 +80,7 @@ public class ApiDeployment extends CRUDKubernetesDependentResource<Deployment, T
                 .withName(getDeploymentName(cr))
                 .withNamespace(cr.getMetadata().getNamespace())
                 .withLabels(contextLabels)
-                .addToLabels("component", "api")
+                .addToLabels("component", "server")
                 .withAnnotations(Map.of("app.openshift.io/connects-to", """
                         [{"apiVersion": "apps/v1", "kind":"Deployment", "name": "%s"}]
                         """.formatted(DBDeployment.getDeploymentName(cr))
@@ -96,15 +96,15 @@ public class ApiDeployment extends CRUDKubernetesDependentResource<Deployment, T
         final var contextLabels = (Map<String, String>) context.managedDependentResourceContext()
                 .getMandatory(Constants.CONTEXT_LABELS_KEY, Map.class);
 
-        Map<String, String> selectorLabels = Constants.API_SELECTOR_LABELS;
-        String image = config.apiImage();
+        Map<String, String> selectorLabels = Constants.SERVER_SELECTOR_LABELS;
+        String image = config.serverImage();
         String imagePullPolicy = config.imagePullPolicy();
 
         List<EnvVar> envVars = distConfigurator.getAllEnvVars();
         List<Volume> volumes = distConfigurator.getAllVolumes();
         List<VolumeMount> volumeMounts = distConfigurator.getAllVolumeMounts();
 
-        TrustifySpec.ResourcesLimitSpec resourcesLimitSpec = CRDUtils.getValueFromSubSpec(cr.getSpec(), TrustifySpec::apiResourceLimitSpec)
+        TrustifySpec.ResourcesLimitSpec resourcesLimitSpec = CRDUtils.getValueFromSubSpec(cr.getSpec(), TrustifySpec::serverResourceLimitSpec)
                 .orElse(null);
 
         return new DeploymentSpecBuilder()
@@ -130,11 +130,11 @@ public class ApiDeployment extends CRUDKubernetesDependentResource<Deployment, T
                                 .withImagePullSecrets(cr.getSpec().imagePullSecrets())
 //                                .withServiceAccountName(Constants.TRUSTI_NAME)
                                 .withContainers(new ContainerBuilder()
-                                        .withName(Constants.TRUSTI_API_NAME)
+                                        .withName(Constants.TRUSTI_SERVER_NAME)
                                         .withImage(image)
                                         .withImagePullPolicy(imagePullPolicy)
                                         .withEnv(envVars)
-                                        .withCommand("/usr/local/bin/trustd", "api", "--devmode")
+                                        .withCommand("/usr/local/bin/trustd", "server", "--devmode")
                                         .withPorts(
                                                 new ContainerPortBuilder()
                                                         .withName("http")
@@ -212,6 +212,6 @@ public class ApiDeployment extends CRUDKubernetesDependentResource<Deployment, T
     }
 
     public static String getDeploymentName(Trustify cr) {
-        return cr.getMetadata().getName() + Constants.API_DEPLOYMENT_SUFFIX;
+        return cr.getMetadata().getName() + Constants.SERVER_DEPLOYMENT_SUFFIX;
     }
 }
