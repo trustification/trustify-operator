@@ -1,6 +1,4 @@
 FROM quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21 AS build
-ARG NATIVE="true"
-
 COPY --chown=quarkus:quarkus mvnw /code/mvnw
 COPY --chown=quarkus:quarkus .mvn /code/.mvn
 COPY --chown=quarkus:quarkus pom.xml /code/
@@ -8,7 +6,7 @@ USER quarkus
 WORKDIR /code
 RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.1.2:go-offline
 COPY src/main /code/src/main
-RUN if [ ${NATIVE} == "true" ]; then ./mvnw package -Dnative -DskipTests; else ./mvnw package -DskipTests; fi
+RUN ./mvnw package -Dnative -DskipTests
 
 FROM quay.io/quarkus/quarkus-micro-image:2.0
 WORKDIR /work/

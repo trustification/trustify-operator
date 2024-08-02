@@ -98,12 +98,13 @@ run: ## Run against the configured Kubernetes cluster in ~/.kube/config
 
 TARGET_PLATFORMS ?= linux/${TARGET_ARCH}
 CONTAINER_BUILDARGS ?= 
+DOCKERFILE ?= Dockerfile
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
 ifeq ($(CONTAINER_RUNTIME), podman)
-	$(CONTAINER_RUNTIME) build --arch ${TARGET_ARCH} -t ${IMG} ${CONTAINER_BUILDARGS} .
+	$(CONTAINER_RUNTIME) build --arch ${TARGET_ARCH} -t ${IMG} ${CONTAINER_BUILDARGS} -f ${DOCKERFILE} .
 else
-	$(CONTAINER_RUNTIME) build --platform ${TARGET_PLATFORMS} -t ${IMG} ${CONTAINER_BUILDARGS} .
+	$(CONTAINER_RUNTIME) build --platform ${TARGET_PLATFORMS} -t ${IMG} ${CONTAINER_BUILDARGS} -f ${DOCKERFILE} .
 endif
 
 .PHONY: docker-push
