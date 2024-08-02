@@ -1,6 +1,13 @@
 FROM quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21 AS build
-ARG IMAGE_GROUP
-ARG IMAGE_TAG
+
+ARG OPERATOR_IMAGE
+
+ARG RELATED_IMAGE_SERVER
+ENV RELATED_IMAGE_SERVER=${RELATED_IMAGE_SERVER:+unset}
+
+ARG RELATED_IMAGE_DB
+ENV RELATED_IMAGE_DB=${RELATED_IMAGE_DB}
+
 COPY --chown=quarkus:quarkus mvnw /code/mvnw
 COPY --chown=quarkus:quarkus .mvn /code/.mvn
 COPY --chown=quarkus:quarkus pom.xml /code/
@@ -8,7 +15,9 @@ USER quarkus
 WORKDIR /code
 RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.1.2:go-offline
 COPY src/main /code/src/main
-RUN ./mvnw package -DskipTests -Dquarkus.container-image.group=$IMAGE_GROUP -Dquarkus.container-image.tag=$IMAGE_TAG
+RUN [[ -z $RELATED_IMAGE_SERVER ]] && unset RELATED_IMAGE_SERVER; \
+    [[ -z $RELATED_IMAGE_DB ]] && unset RELATED_IMAGE_DB; \
+    ./mvnw package -DskipTests -Dquarkus.container-image.image=$OPERATOR_IMAGE
 
 FROM registry.access.redhat.com/ubi9/ubi:latest as bundle
 COPY scripts /scripts
