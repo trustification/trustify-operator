@@ -51,19 +51,7 @@ IMAGE_TAG_BASE ?= $(IMAGE_ORG)/trustify-operator
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
 BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 
-# BUNDLE_GEN_FLAGS are the flags passed to the operator-sdk generate bundle command
-BUNDLE_GEN_FLAGS ?= -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
-
-HELM_RELEASE ?= my-trustify-release
 NAMESPACE ?= trustify
-
-# USE_IMAGE_DIGESTS defines if images are resolved via tags or digests
-# You can enable this value if you would like to use SHA Based Digests
-# To enable set flag to true
-USE_IMAGE_DIGESTS ?= false
-ifeq ($(USE_IMAGE_DIGESTS), true)
-	BUNDLE_GEN_FLAGS += --use-image-digests
-endif
 
 # Image URL to use all building/pushing image targets
 IMG ?= $(IMAGE_ORG)/trustify-operator:latest
@@ -201,36 +189,3 @@ install-trustify:
 .PHONY: install-trustify-bundle
 install-trustify-bundle:
 	bash hack/install-trustify-bundle.sh
-
-YQ = $(shell pwd)/bin/yq
-.PHONY: yq
-yq:
-ifeq (,$(wildcard $(YQ)))
-ifeq (,$(shell which yq 2>/dev/null))
-	@{ \
-	set -e ;\
-	mkdir -p $(dir $(YQ)) ;\
-	curl -L https://github.com/mikefarah/yq/releases/download/v4.13.5/yq_$(OS)_$(ARCH) -o $(YQ) ;\
-	chmod +x $(YQ) ;\
-	}
-else
-YQ = $(shell which yq)
-endif
-endif
-
-OPENSHIFT_CLIENT = $(shell pwd)/bin/oc
-.PHONY: openshift-client
-openshift-client:
-ifeq (,$(wildcard $(OPENSHIFT_CLIENT)))
-ifeq (,$(shell which oc 2>/dev/null))
-	@{ \
-	set -e ;\
-	mkdir -p $(dir $(OPENSHIFT_CLIENT)) ;\
-	curl -L https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable/openshift-client-$(subst darwin,mac,$(OS))-$(ARCH).tar.gz -o $(dir $(OPENSHIFT_CLIENT))openshift-client.tar.gz ;\
-	tar zxf $(dir $(OPENSHIFT_CLIENT))openshift-client.tar.gz -C $(dir $(OPENSHIFT_CLIENT)) ;\
-	rm $(dir $(OPENSHIFT_CLIENT))openshift-client.tar.gz ;\
-	}
-else
-OPENSHIFT_CLIENT = $(shell which oc)
-endif
-endif

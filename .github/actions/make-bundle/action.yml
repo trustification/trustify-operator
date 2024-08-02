@@ -10,11 +10,11 @@ inputs:
     required: false
     default: ""
   server:
-    description: "image uri for tackle-hub (ie. ghcr.io/<namespace>/<image-name>:<tag>)"
+    description: "image uri for trustify server (ie. ghcr.io/<namespace>/<image-name>:<tag>)"
     required: false
     default: ""
   server_postgres:
-    description: "image uri for tackle-postgres (ie. ghcr.io/<namespace>/<image-name>:<tag>)"
+    description: "image uri for trustify postgres (ie. ghcr.io/<namespace>/<image-name>:<tag>)"
     required: false
     default: ""
   version:
