@@ -16,17 +16,41 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        kubernetes_version: [ v1.23.17-k3s1, v1.24.17-k3s1, v1.25.16-k3s4, v1.26.15-k3s1, v1.27.15-k3s2, v1.28.11-k3s2 ]
+        kubernetes_version:
+          [
+            v1.23.17-k3s1,
+            v1.24.17-k3s1,
+            v1.25.16-k3s4,
+            v1.26.15-k3s1,
+            v1.27.15-k3s2,
+            v1.28.11-k3s2,
+          ]
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'maven'
+          distribution: "temurin"
+          java-version: "17"
+          cache: "maven"
       - name: Test
         env:
           KUBERNETES_VERSION: ${{ matrix.kubernetes_version }}
         run: |
           mvn verify
+
+  build-operator-bundle:
+    runs-on: ubuntu-latest
+    env:
+      IMG: ttl.sh/trustify-operator-${{ github.sha }}:2h
+      BUNDLE_IMG: ttl.sh/trustify-operator-bundle-${{ github.sha }}:2h
+    steps:
+      - uses: actions/checkout@v4
+      - run: make docker-build docker-push
+      - run: make bundle-build bundle-push
+
+  run-ci:
+    needs: build-operator-bundle
+    uses: carlosthe19916/trustify-ci/.github/workflows/global-ci-bundle.yml@main
+    with:
+      operator_bundle: ttl.sh/trustify-operator-bundle-${{ github.sha }}:2h
