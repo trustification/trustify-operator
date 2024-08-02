@@ -97,31 +97,14 @@ run: ## Run against the configured Kubernetes cluster in ~/.kube/config
 	./mvnw compile quarkus:dev
 
 TARGET_PLATFORMS ?= linux/${TARGET_ARCH}
-CONTAINER_BUILDARGS ?= --build-arg OPERATOR_SDK_VERSION=v1.34.2
+CONTAINER_BUILDARGS ?= 
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
 ifeq ($(CONTAINER_RUNTIME), podman)
-	$(CONTAINER_RUNTIME) build --arch ${TARGET_ARCH} -t ${IMG} .
+	$(CONTAINER_RUNTIME) build --arch ${TARGET_ARCH} -t ${IMG} ${CONTAINER_BUILDARGS} .
 else
-	$(CONTAINER_RUNTIME) build --platform ${TARGET_PLATFORMS} -t ${IMG} .
+	$(CONTAINER_RUNTIME) build --platform ${TARGET_PLATFORMS} -t ${IMG} ${CONTAINER_BUILDARGS} .
 endif
-
-# PLATFORMS defines the target platforms for  the manager image be build to provide support to multiple
-# architectures. (i.e. make docker-buildx IMG=myregistry/mypoperator:0.0.1). To use this option you need to:
-# - able to use docker buildx . More info: https://docs.docker.com/build/buildx/
-# - have enable BuildKit, More info: https://docs.docker.com/develop/develop-images/build_enhancements/
-# - be able to push the image for your registry (i.e. if you do not inform a valid value via IMG=<myregistry/image:<tag>> than the export will fail)
-# To properly provided solutions that supports more than one platform you should use this option.
-PLATFORMS ?= linux/arm64,linux/amd64,linux/s390x,linux/ppc64le
-.PHONY: docker-buildx
-docker-buildx: ## Build and push docker image for the manager for cross-platform support
-	# copy existing Dockerfile and insert --platform=${BUILDPLATFORM} into Dockerfile.cross, and preserve the original Dockerfile
-	sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' Dockerfile > Dockerfile.cross
-	- docker buildx create --name project-v3-builder
-	docker buildx use project-v3-builder
-	- docker buildx build --push --platform=$(PLATFORMS) --tag ${IMG} -f Dockerfile.cross .
-	- docker buildx rm project-v3-builder
-	rm Dockerfile.cross
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
