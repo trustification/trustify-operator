@@ -1,9 +1,9 @@
 {
   "name": "trustify-operator",
-  "image": "mcr.microsoft.com/devcontainers/java:17-bullseye",
+  "image": "mcr.microsoft.com/devcontainers/java:21-bullseye",
   "features": {
     "ghcr.io/devcontainers/features/java:1": {
-      "version": "17",
+      "version": "21",
       "installMaven": "true",
       "installGradle": "false"
     },
