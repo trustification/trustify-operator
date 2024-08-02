@@ -1,0 +1,72 @@
+name: Make Operator Bundle
+description: |
+  Make an operator bundle. This does not save the image for you.
+inputs:
+  operator_bundle:
+    description: "image uri for operator bundle (ie. ghcr.io/<namespace>/<image-name>:<tag>)"
+    required: true
+  operator:
+    description: "image uri for operator (ie. ghcr.io/<namespace>/<image-name>:<tag>)"
+    required: false
+    default: ""
+  server:
+    description: "image uri for tackle-hub (ie. ghcr.io/<namespace>/<image-name>:<tag>)"
+    required: false
+    default: ""
+  server_postgres:
+    description: "image uri for tackle-postgres (ie. ghcr.io/<namespace>/<image-name>:<tag>)"
+    required: false
+    default: ""
+  version:
+    description: "operator version"
+    required: false
+    default: ""
+  channels:
+    description: "comma separated channel(s) this operator should be available on"
+    required: false
+    default: ""
+  push_bundle:
+    description: ""
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    - name: hello
+      shell: bash
+      run: |
+        cd ${{ github.action_path }}/../../..
+        pwd
+        ls -li
+        echo "---------------"
+        cat /home/runner/work/_actions/carlosthe19916/trustify-operator/main/bundle.Dockerfile
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure QEMU
+      uses: docker/setup-qemu-action@master
+      with:
+        platforms: all
+
+    - name: Make bundle
+      id: build-bundle-image
+      uses: redhat-actions/buildah-build@v2      
+      with:
+        tags: ${{ inputs.operator_bundle }}
+        # extra-args: "--build-arg OPERATOR_IMAGE=${{ inputs.operator }} --build-arg RELATED_IMAGE_SERVER=${{ inputs.server }} --build-arg RELATED_IMAGE_DB=${{ inputs.server_postgres }}"
+        archs: '[ "amd64" ]'
+        containerfiles: /home/runner/work/_actions/carlosthe19916/trustify-operator/main/bundle.Dockerfile
+        # containerfiles: "${{ github.action_path }}/../../../bundle.Dockerfile"
+        # context: ${{ github.action_path }}/../../..
+
+    # - name: Push Bundle
+    #   uses: redhat-actions/push-to-registry@v2
+    #   id: push-bundle-image
+    #   if: ${{ inputs.push_bundle == 'true' }}      
+    #   with:
+    #     image: ${{ steps.build-bundle-image.outputs.image }}
+    #     username: ${{ secrets.registry_username }}
+    #     password: ${{ secrets.registry_password }}
+    #     registry: "ghcr.io"
