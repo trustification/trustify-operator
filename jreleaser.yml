@@ -7,7 +7,7 @@ project:
   license: Apache-2
   java:
     groupId: org.trustify.operator
-    version: 17
+    version: 21
   inceptionYear: 2024
   links:
     homepage: https://trustification.io/
