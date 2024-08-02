@@ -11,10 +11,10 @@ RUN ./mvnw package -DskipTests
 FROM registry.access.redhat.com/ubi8/openjdk-21:1.19
 ENV LANGUAGE='en_US:en'
 
-COPY --from=build --chown=185 /code/target/target/quarkus-app/lib/ /deployments/lib/
-COPY --from=build --chown=185 /code/target/target/quarkus-app/*.jar /deployments/
-COPY --from=build --chown=185 /code/target/target/quarkus-app/app/ /deployments/app/
-COPY --from=build --chown=185 /code/target/target/quarkus-app/quarkus/ /deployments/quarkus/
+COPY --from=build --chown=185 /code/target/quarkus-app/lib/ /deployments/lib/
+COPY --from=build --chown=185 /code/target/quarkus-app/*.jar /deployments/
+COPY --from=build --chown=185 /code/target/quarkus-app/app/ /deployments/app/
+COPY --from=build --chown=185 /code/target/quarkus-app/quarkus/ /deployments/quarkus/
 
 EXPOSE 8080
 USER 185
