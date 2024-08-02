@@ -33,40 +33,30 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: hello
-      shell: bash
-      run: |
-        cd ${{ github.action_path }}/../../..
-        pwd
-        ls -li
-        echo "---------------"
-        cat /home/runner/work/_actions/carlosthe19916/trustify-operator/main/bundle.Dockerfile
+  - name: Make and Push bundle
+    env:
+      BUNDLE_IMG: ${{ inputs.operator_bundle }}
+    run: |
+      [ -n "${{ inputs.channels }}" ] && export CHANNELS="${{ inputs.channels }}"
+      [ -n "${{ inputs.version }}" ] && export VERSION="${{ inputs.version }}"
+      [ -n "${VERSION}" ] && export VERSION="${VERSION:1}"
+      [ -n "${{ inputs.operator }}" ] && export IMG="${{ inputs.operator }}"
 
-    - name: Checkout
-      uses: actions/checkout@v4
+      OPTS=""
+      [ -n "${{ inputs.server }}" ] && OPTS+=" -Drelated.image.server=${{ inputs.server }}"
+      [ -n "${{ inputs.server_postgres }}" ] && OPTS+=" -Drelated.image.db=${{ inputs.server_postgres }}"
 
-    - name: Configure QEMU
-      uses: docker/setup-qemu-action@master
-      with:
-        platforms: all
+      QUARKUS_OPTS="${OPTS}" make bundle-build
+      docker cp $(docker create --name download $BUNDLE_IMG ls):/manifests/trustify-operator.clusterserviceversion.yaml . && docker rm download
+      cat trustify-operator.clusterserviceversion.yaml
+    working-directory: ${{ github.action_path }}/../../..
+    shell: bash
 
-    - name: Make bundle
-      id: build-bundle-image
-      uses: redhat-actions/buildah-build@v2      
-      with:
-        tags: ${{ inputs.operator_bundle }}
-        # extra-args: "--build-arg OPERATOR_IMAGE=${{ inputs.operator }} --build-arg RELATED_IMAGE_SERVER=${{ inputs.server }} --build-arg RELATED_IMAGE_DB=${{ inputs.server_postgres }}"
-        archs: '[ "amd64" ]'
-        containerfiles: /home/runner/work/_actions/carlosthe19916/trustify-operator/main/bundle.Dockerfile
-        # containerfiles: "${{ github.action_path }}/../../../bundle.Dockerfile"
-        # context: ${{ github.action_path }}/../../..
-
-    # - name: Push Bundle
-    #   uses: redhat-actions/push-to-registry@v2
-    #   id: push-bundle-image
-    #   if: ${{ inputs.push_bundle == 'true' }}      
-    #   with:
-    #     image: ${{ steps.build-bundle-image.outputs.image }}
-    #     username: ${{ secrets.registry_username }}
-    #     password: ${{ secrets.registry_password }}
-    #     registry: "ghcr.io"
+  - name: Push bundle
+    if: ${{ inputs.push_bundle == 'true' }}
+    env:
+      BUNDLE_IMG: ${{ inputs.operator_bundle }}
+    run: |
+      make bundle-push
+    working-directory: ${{ github.action_path }}/../../..
+    shell: bash
