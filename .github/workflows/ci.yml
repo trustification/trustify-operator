@@ -38,3 +38,21 @@ jobs:
           KUBERNETES_VERSION: ${{ matrix.kubernetes_version }}
         run: |
           mvn verify
+
+  build-operator-bundle:
+    runs-on: ubuntu-latest
+    env:
+      IMG: ttl.sh/trustify-operator-${{ github.sha }}:2h
+      BUNDLE_IMG: ttl.sh/trustify-operator-bundle-${{ github.sha }}:2h
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create operator
+        run: DOCKERFILE=Dockerfile.jvm make docker-build docker-push
+      - name: Create operator-bundle
+        run: make bundle-build bundle-push
+
+  run-ci:
+    needs: build-operator-bundle
+    uses: carlosthe19916/trustify-ci/.github/workflows/global-ci-bundle.yml@main
+    with:
+      operator_bundle: ttl.sh/trustify-operator-bundle-${{ github.sha }}:2h

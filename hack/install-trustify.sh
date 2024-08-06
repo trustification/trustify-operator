@@ -2,41 +2,21 @@
 
 set -e
 set -x
-
-# Figure out where we are being run from.
-# This relies on script being run from:
-#  - ${PROJECT_ROOT}/hack/install-trustify.sh
-#  - ${PROJECT_ROOT}/bin/install-trustify.sh
-__dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-__root="$(cd "$(dirname "${__dir}")" && pwd)"
-__repo="$(basename "${__root}")"
-__bin_dir="${__root}/bin"
-__os="$(uname -s | tr '[:upper:]' '[:lower:]')"
-__arch="$(uname -m | sed 's/x86_64/amd64/' | sed 's/aarch64/arm64/')"
-
-# Update PATH for execution of this script
-export PATH="${__bin_dir}:${PATH}"
+set -o pipefail
 
 NAMESPACE="${NAMESPACE:-trustify}"
 OPERATOR_BUNDLE_IMAGE="${OPERATOR_BUNDLE_IMAGE:-ghcr.io/trustification/trustify-operator-bundle:latest}"
-SERVER_IMAGE="${SERVER_IMAGE:-ghcr.io/trustification/trustd:latest}"
-IMAGE_PULL_POLICY="${IMAGE_PULL_POLICY:-Always}"
+TRUSTIFY_CR="${TRUSTIFY_CR:-}"
 TIMEOUT="${TIMEOUT:-15m}"
 
 if ! command -v kubectl >/dev/null 2>&1; then
-  kubectl_bin="${__bin_dir}/kubectl"
-  mkdir -p "${__bin_dir}"
-  curl -Lo "${kubectl_bin}" "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/${__os}/${__arch}/kubectl"
-  chmod +x "${kubectl_bin}"
+  echo "Please install kubectl. See https://kubernetes.io/docs/tasks/tools/"
+  exit 1
 fi
 
-if ! command -v operator-sdk1 >/dev/null 2>&1; then
-  operator_sdk_bin="${__bin_dir}/operator-sdk"
-  mkdir -p "${__bin_dir}"
-
-  version=$(curl --silent "https://api.github.com/repos/operator-framework/operator-sdk/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-  curl -Lo "${operator_sdk_bin}" "https://github.com/operator-framework/operator-sdk/releases/download/${version}/operator-sdk_${__os}_${__arch}"
-  chmod +x "${operator_sdk_bin}"
+if ! command -v operator-sdk >/dev/null 2>&1; then
+  echo "Please install operator-sdk. See https://sdk.operatorframework.io/docs/installation/"
+  exit 1
 fi
 
 install_operator() {
@@ -47,6 +27,60 @@ install_operator() {
   # If on MacOS, need to install `brew install coreutils` to get `timeout`
   timeout 600s bash -c 'until kubectl get customresourcedefinitions.apiextensions.k8s.io trustifies.org.trustify; do sleep 30; done' \
   || kubectl get subscription --namespace ${NAMESPACE} -o yaml trustify-operator # Print subscription details when timed out
+  kubectl get clusterserviceversions.operators.coreos.com -n "${NAMESPACE}" -o yaml
+}
+
+install_trustify() {
+  echo "Waiting for the Trustify CRD to become available"
+  kubectl wait --namespace "${NAMESPACE}" --for=condition=established customresourcedefinitions.apiextensions.k8s.io/trustifies.org.trustify
+
+  echo "Waiting for the Trustify Operator to exist"
+  timeout 2m bash -c "until kubectl --namespace ${NAMESPACE} get deployment/trustify-operator; do sleep 10; done"
+
+  echo "Waiting for the Trustify Operator to become available"
+  kubectl rollout status --namespace "${NAMESPACE}" -w deployment/trustify-operator --timeout=600s
+
+  if [ -n "${TRUSTIFY_CR}" ]; then
+      echo "${TRUSTIFY_CR}" | kubectl apply --namespace "${NAMESPACE}" -f -
+    else
+      cat <<EOF | kubectl apply --namespace "${NAMESPACE}" -f -
+kind: Trustify
+apiVersion: org.trustify/v1alpha1
+metadata:
+  name: myapp
+spec: {}
+EOF
+    fi
+
+  # Want to see in github logs what we just created
+  kubectl get --namespace "${NAMESPACE}" -o yaml trustifies.org.trustify/myapp
+
+  # Wait for reconcile to finish
+    kubectl wait \
+      --namespace ${NAMESPACE} \
+      --for=condition=Successful \
+      --timeout=600s \
+      trustifies.org.trustify/myapp \
+    || kubectl get \
+      --namespace ${NAMESPACE} \
+      -o yaml \
+      trustifies.org.trustify/myapp # Print trustify debug when timed out
+
+  # Now wait for all the trustify deployments
+  kubectl wait \
+    --namespace ${NAMESPACE} \
+    --selector="app.kubernetes.io/part-of=myapp" \
+    --for=condition=Available \
+    --timeout=600s \
+    deployments.apps \
+  || kubectl get \
+    --namespace ${NAMESPACE} \
+    --selector="app.kubernetes.io/part-of=myapp" \
+    --field-selector=status.phase!=Running  \
+    -o yaml \
+    pods # Print not running trustify pods when timed out
+
+  kubectl get deployments.apps -n "${NAMESPACE}" -o yaml
 }
 
 kubectl get customresourcedefinitions.apiextensions.k8s.io clusterserviceversions.operators.coreos.com || operator-sdk olm install
@@ -55,44 +89,4 @@ kubectl rollout status -w deployment/olm-operator --namespace="${olm_namespace}"
 kubectl rollout status -w deployment/catalog-operator --namespace="${olm_namespace}"
 kubectl wait --namespace "${olm_namespace}" --for='jsonpath={.status.phase}'=Succeeded clusterserviceversions.operators.coreos.com packageserver
 kubectl get customresourcedefinitions.apiextensions.k8s.io org.trustify || install_operator
-
-
-# Create, and wait for, trustify
-kubectl wait \
-  --namespace ${NAMESPACE} \
-  --for=condition=established \
-  customresourcedefinitions.apiextensions.k8s.io/trustifies.org.trustify
-cat <<EOF | kubectl apply -f -
-kind: Trustify
-apiVersion: org.trustify/v1alpha1
-metadata:
-  name: myapp
-  namespace: ${NAMESPACE}
-spec:
-  serverImage: ${SERVER_IMAGE}
-  imagePullPolicy: ${IMAGE_PULL_POLICY}
-EOF
-# Wait for reconcile to finish
-kubectl wait \
-  --namespace ${NAMESPACE} \
-  --for=condition=Successful \
-  --timeout=600s \
-  trustifies.org.trustify/myapp \
-|| kubectl get \
-  --namespace ${NAMESPACE} \
-  -o yaml \
-  trustifies.org.trustify/myapp # Print trustify debug when timed out
-
-# Now wait for all the trustify deployments
-kubectl wait \
-  --namespace ${NAMESPACE} \
-  --selector="app.kubernetes.io/part-of=myapp" \
-  --for=condition=Available \
-  --timeout=600s \
-  deployments.apps \
-|| kubectl get \
-  --namespace ${NAMESPACE} \
-  --selector="app.kubernetes.io/part-of=myapp" \
-  --field-selector=status.phase!=Running  \
-  -o yaml \
-  pods # Print not running trustify pods when timed out
+install_trustify

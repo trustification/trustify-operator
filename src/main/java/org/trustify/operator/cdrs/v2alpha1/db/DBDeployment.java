@@ -19,6 +19,7 @@ import org.trustify.operator.utils.CRDUtils;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -94,8 +95,8 @@ public class DBDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
                 .getMandatory(Constants.CONTEXT_LABELS_KEY, Map.class);
 
         Map<String, String> selectorLabels = Constants.DB_SELECTOR_LABELS;
-        String image = config.dbImage();
-        String imagePullPolicy = config.imagePullPolicy();
+        String image = Optional.ofNullable(cr.getSpec().dbImage()).orElse(config.dbImage());
+        String imagePullPolicy = Optional.ofNullable(cr.getSpec().imagePullPolicy()).orElse(config.imagePullPolicy());
 
         TrustifySpec.ResourcesLimitSpec resourcesLimitSpec = CRDUtils.getValueFromSubSpec(cr.getSpec().databaseSpec(), TrustifySpec.DatabaseSpec::resourceLimitSpec)
                 .orElse(null);
