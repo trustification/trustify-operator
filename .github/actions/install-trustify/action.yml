@@ -5,15 +5,15 @@ inputs:
   operator-bundle-image:
     description: "image url for operator bundle container image"
     required: false
-    default: "ghcr.io/trustification/trustify-operator-bundle:latest"
-  server-image:
-    description: "image url for the server"
+    default: ""
+  namespace:
+    description: "the namespace where Trustify should be installed"
     required: false
-    default: "ghcr.io/trustification/trustd:latest"
-  image-pull-policy:
-    description: "Image Pull Policy"
+    default: ""
+  trustify-cr:
+    description: "JSON encoded Trustify Custom Resource (CR) string"
     required: false
-    default: "Always"
+    default: ""
 runs:
   using: "composite"
   steps:
@@ -36,10 +36,11 @@ runs:
         curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v1.35.0/operator-sdk_linux_amd64
         sudo install -o root -g root -m 0755 operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
     - name: Install Trustify
+      env:
+        OPERATOR_BUNDLE_IMAGE: ${{ inputs.operator-bundle-image }}
+        NAMESPACE: ${{ inputs.namespace }}
+        TRUSTIFY_CR: ${{ inputs.trustify-cr }}
       run: |
-        export OPERATOR_BUNDLE_IMAGE="${{ inputs.operator-bundle-image }}"
-        export SERVER_IMAGE="${{ inputs.server-image }}"        
-        export IMAGE_PULL_POLICY="${{ inputs.image-pull-policy }}"
         make install-trustify
       working-directory: ${{ github.action_path }}/../../..
       shell: bash

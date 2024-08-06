@@ -185,7 +185,3 @@ start-minikube:
 .PHONY: install-trustify
 install-trustify:
 	bash hack/install-trustify.sh
-
-.PHONY: install-trustify-bundle
-install-trustify-bundle:
-	bash hack/install-trustify-bundle.sh

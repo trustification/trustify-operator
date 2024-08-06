@@ -46,9 +46,10 @@ jobs:
       BUNDLE_IMG: ttl.sh/trustify-operator-bundle-${{ github.sha }}:2h
     steps:
       - uses: actions/checkout@v4
-      - run: DOCKERFILE=Dockerfile.jvm make docker-build docker-push
-      - run: make bundle-build bundle-push
-
+      - name: Create operator
+        run: DOCKERFILE=Dockerfile.jvm make docker-build docker-push
+      - name: Create operator-bundle
+        run: make bundle-build bundle-push
   run-ci:
     needs: build-operator-bundle
     uses: carlosthe19916/trustify-ci/.github/workflows/global-ci-bundle.yml@main

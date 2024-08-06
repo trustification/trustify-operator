@@ -10,6 +10,9 @@ public record TrustifySpec(
         @JsonPropertyDescription("Custom Trustify Server image to be used. For internal use only")
         String serverImage,
 
+        @JsonPropertyDescription("Custom Trustify DB Server image to be used. For internal use only")
+        String dbImage,
+
         @JsonPropertyDescription("Custom Image Pull Policy for images managed by the Operator")
         String imagePullPolicy,
 
@@ -35,6 +38,7 @@ public record TrustifySpec(
 
     public TrustifySpec() {
         this(
+                null,
                 null,
                 null,
                 null,
