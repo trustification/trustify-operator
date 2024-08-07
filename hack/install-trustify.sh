@@ -22,7 +22,9 @@ fi
 install_operator() {
   kubectl auth can-i create namespace --all-namespaces
   kubectl create namespace ${NAMESPACE} || true
-  operator-sdk run bundle "${OPERATOR_BUNDLE_IMAGE}" --namespace "${NAMESPACE}" --timeout "${TIMEOUT}"
+  operator-sdk run bundle "${OPERATOR_BUNDLE_IMAGE}" --namespace "${NAMESPACE}" --timeout "${TIMEOUT}" || kubectl events --all-namespaces -o yaml
+
+  while true; do echo -n "This is a test of while loop";date ; sleep 5; done
 
   # If on MacOS, need to install `brew install coreutils` to get `timeout`
   timeout 600s bash -c 'until kubectl get customresourcedefinitions.apiextensions.k8s.io trustifies.org.trustify; do sleep 30; done' \
