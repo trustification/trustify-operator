@@ -2,6 +2,7 @@ package org.trustify.operator.cdrs.v2alpha1.server;
 
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.api.model.networking.v1.IngressTLS;
+import io.fabric8.kubernetes.api.model.networking.v1.IngressTLSBuilder;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
@@ -11,13 +12,14 @@ import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
 import org.trustify.operator.utils.CRDUtils;
 
+import java.util.Collections;
 import java.util.Map;
 
 @KubernetesDependent(labelSelector = ServerIngress.LABEL_SELECTOR, resourceDiscriminator = ServerIngressDiscriminator.class)
 @ApplicationScoped
 public class ServerIngress extends ServerIngressBase {
 
-    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=server,component-variant=http";
+    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=server,component-variant=https";
 
     @Override
     @SuppressWarnings("unchecked")
@@ -28,16 +30,14 @@ public class ServerIngress extends ServerIngressBase {
                 getIngressName(cr),
                 Map.of(
                         "component", "server",
-                        "component-variant", "http"
+                        "component-variant", "https"
                 ),
-                Map.of(
-                        "console.alpha.openshift.io/overview-app-route", "true"
-                )
+                Collections.emptyMap()
         );
     }
 
     @Override
-    public boolean isMet(DependentResource<Ingress, Trustify> dependentResource, Trustify cr, Context<Trustify> context) {
+    public boolean isMet(DependentResource<Ingress, Trustify> dependentResource, Trustify primary, Context<Trustify> context) {
         return context.getSecondaryResource(Ingress.class, new ServerIngressDiscriminator())
                 .map(in -> {
                     final var status = in.getStatus();
@@ -68,7 +68,12 @@ public class ServerIngress extends ServerIngressBase {
 
     @Override
     protected IngressTLS getIngressTLS(Trustify cr) {
-        return null;
+        String tlsSecretName = CRDUtils.getValueFromSubSpec(cr.getSpec().httpSpec(), TrustifySpec.HttpSpec::tlsSecret)
+                .orElse(null);
+
+        return new IngressTLSBuilder()
+                .withSecretName(tlsSecretName)
+                .build();
     }
 
     public static String getIngressName(Trustify cr) {

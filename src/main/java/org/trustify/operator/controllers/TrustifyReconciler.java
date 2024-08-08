@@ -14,7 +14,6 @@ import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifyStatusCondition;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerDeployment;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerIngress;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerIngressSecure;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
 import org.trustify.operator.cdrs.v2alpha1.db.DBDeployment;
 import org.trustify.operator.cdrs.v2alpha1.db.DBPersistentVolumeClaim;
@@ -38,8 +37,7 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
                 @Dependent(name = "server-deployment", type = ServerDeployment.class, dependsOn = {"db-service"}, readyPostcondition = ServerDeployment.class, useEventSourceWithName = TrustifyReconciler.DEPLOYMENT_EVENT_SOURCE),
                 @Dependent(name = "server-service", type = ServerService.class, dependsOn = {"db-service"}, useEventSourceWithName = TrustifyReconciler.SERVICE_EVENT_SOURCE),
 
-                @Dependent(name = "ingress", type = ServerIngress.class, dependsOn = {"db-service"}, readyPostcondition = ServerIngress.class, useEventSourceWithName = TrustifyReconciler.INGRESS_EVENT_SOURCE),
-                @Dependent(name = "ingress-secure", type = ServerIngressSecure.class, dependsOn = {"db-service"}, readyPostcondition = ServerIngressSecure.class, useEventSourceWithName = TrustifyReconciler.INGRESS_EVENT_SOURCE)
+                @Dependent(name = "ingress", type = ServerIngress.class, dependsOn = {"db-service"}, readyPostcondition = ServerIngress.class, useEventSourceWithName = TrustifyReconciler.INGRESS_EVENT_SOURCE)
         }
 )
 public class TrustifyReconciler implements Reconciler<Trustify>, ContextInitializer<Trustify>,
