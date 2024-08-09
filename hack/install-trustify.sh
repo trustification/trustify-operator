@@ -19,10 +19,10 @@ if ! command -v operator-sdk >/dev/null 2>&1; then
   exit 1
 fi
 
-install_operator() {
+run_bundle() {
   kubectl auth can-i create namespace --all-namespaces
   kubectl create namespace ${NAMESPACE} || true
-  operator-sdk run bundle "${OPERATOR_BUNDLE_IMAGE}" --namespace "${NAMESPACE}" --timeout "${TIMEOUT}" || (kubectl events --namespace "${NAMESPACE}" -o yaml && exit 1)
+  operator-sdk run bundle "${OPERATOR_BUNDLE_IMAGE}" --namespace "${NAMESPACE}" --timeout "${TIMEOUT}" || (kubectl get Subscription --namespace "${NAMESPACE}" -o yaml && exit 1)
 
   # If on MacOS, need to install `brew install coreutils` to get `timeout`
   timeout 600s bash -c 'until kubectl get customresourcedefinitions.apiextensions.k8s.io trustifies.org.trustify; do sleep 30; done' \
@@ -83,10 +83,13 @@ EOF
   kubectl get deployments.apps -n "${NAMESPACE}" -o yaml
 }
 
-kubectl get customresourcedefinitions.apiextensions.k8s.io clusterserviceversions.operators.coreos.com || operator-sdk olm install
+# Available versions of OLM here https://github.com/operator-framework/operator-lifecycle-manager/releases
+# Using v0.26.0 as it avoids the error: "failed to populate resolver cache from source operatorhubio-catalog/olm: failed to list bundles: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp: lookup operatorhubio-catalog.olm.svc on 10.96.0.10:53: no such host"
+# Once higher versions of OLM are more stable we should use them
+kubectl get customresourcedefinitions.apiextensions.k8s.io clusterserviceversions.operators.coreos.com || operator-sdk olm install --version v0.26.0
 olm_namespace=$(kubectl get clusterserviceversions.operators.coreos.com --all-namespaces | grep packageserver | awk '{print $1}')
 kubectl rollout status -w deployment/olm-operator --namespace="${olm_namespace}"
 kubectl rollout status -w deployment/catalog-operator --namespace="${olm_namespace}"
 kubectl wait --namespace "${olm_namespace}" --for='jsonpath={.status.phase}'=Succeeded clusterserviceversions.operators.coreos.com packageserver
-kubectl get customresourcedefinitions.apiextensions.k8s.io org.trustify || install_operator
+kubectl get customresourcedefinitions.apiextensions.k8s.io org.trustify || run_bundle
 install_trustify
