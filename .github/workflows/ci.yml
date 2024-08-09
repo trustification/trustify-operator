@@ -52,6 +52,6 @@ jobs:
         run: make bundle-build bundle-push
   run-ci:
     needs: build-operator-bundle
-    uses: carlosthe19916/trustify-ci/.github/workflows/global-ci.yml@main
+    uses: trustification/trustify-ci/.github/workflows/global-ci.yml@main
     with:
       operator_bundle: ttl.sh/trustify-operator-bundle-${{ github.sha }}:2h
