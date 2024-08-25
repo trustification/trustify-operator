@@ -100,11 +100,11 @@ public class TrustifyDistConfigurator {
         String dbSecretName = DBSecret.getSecretName(cr);
 
         List<EnvVar> envVars = optionMapper(cr.getSpec())
-                .mapOption("DB_USER", spec -> new SecretKeySelector(Constants.DB_SECRET_USERNAME, dbSecretName, false))
-                .mapOption("DB_PASSWORD", spec -> new SecretKeySelector(Constants.DB_SECRET_PASSWORD, dbSecretName, false))
-                .mapOption("DB_HOST", spec -> DBService.getServiceName(cr))
-                .mapOption("DB_PORT", spec -> 5432)
-                .mapOption("DB_NAME", spec -> Constants.DB_NAME)
+                .mapOption("TRUSTD_DB_USER", spec -> new SecretKeySelector(Constants.DB_SECRET_USERNAME, dbSecretName, false))
+                .mapOption("TRUSTD_DB_PASSWORD", spec -> new SecretKeySelector(Constants.DB_SECRET_PASSWORD, dbSecretName, false))
+                .mapOption("TRUSTD_DB_HOST", spec -> DBService.getServiceName(cr))
+                .mapOption("TRUSTD_DB_PORT", spec -> 5432)
+                .mapOption("TRUSTD_DB_NAME", spec -> Constants.DB_NAME)
                 .getEnvVars();
 
         allEnvVars.addAll(envVars);
