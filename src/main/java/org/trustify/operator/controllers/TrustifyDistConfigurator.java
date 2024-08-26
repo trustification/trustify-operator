@@ -112,7 +112,7 @@ public class TrustifyDistConfigurator {
 
     private void configureStorage() {
         List<EnvVar> envVars = optionMapper(cr.getSpec())
-                .mapOption("STORAGE_FS_PATH", spec -> "/opt/trustify/storage")
+                .mapOption("TRUSTD_STORAGE_FS_PATH", spec -> "/opt/trustify/storage")
                 .getEnvVars();
 
         var volume = new VolumeBuilder()
