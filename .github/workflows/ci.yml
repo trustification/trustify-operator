@@ -12,7 +12,6 @@ on:
 
 jobs:
   rancher:
-    name: test
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -43,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        preset: [ okd, microshift ]
+        preset: [ microshift, okd, openshift ]
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
@@ -82,7 +81,7 @@ jobs:
       - name: Setup the crc
         run: sudo -su $USER crc setup
       - name: Start the crc
-        run: sudo -su $USER crc start -p pull-secret.txt
+        run: sudo -su $USER crc start -p ${{ secrets.PULL_SECRET }}
       - name: Test
         run: |
           export HOST_KUBERNETES_CONFIG_FILE=${HOME}/.kube/config
