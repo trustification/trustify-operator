@@ -38,11 +38,24 @@ jobs:
           KUBERNETES_VERSION: ${{ matrix.kubernetes_version }}
         run: mvn verify
 
+  define-crc-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      presets: ${{ steps.presets.outputs.presets }}
+    steps:
+      - name: Define presets
+        id: presets
+        run: |
+          if [[ ${{github.event_name}} != 'pull_request' ]];then
+            echo 'presets=["okd", "openshift", "microshift"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'presets=["okd"]' >> "$GITHUB_OUTPUT"
+          fi
   crc:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        preset: [ microshift, okd, openshift ]
+        color: ${{ fromJSON(needs.define-crc-matrix.outputs.presets) }}
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
