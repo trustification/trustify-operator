@@ -9,6 +9,11 @@ import jakarta.enterprise.inject.Alternative;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
+import org.testcontainers.shaded.com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+
+import java.io.IOException;
+import java.util.*;
 
 @Alternative
 @Priority(1)
@@ -22,15 +27,29 @@ public class K3sConfigProducer extends KubernetesConfigProducer {
     String namespace;
 
     //Returns the kubeConfigYaml as the config
+    @SuppressWarnings(value = {"unchecked", "rawtypes"})
     @Singleton
     @Produces
     public Config config(KubernetesClientBuildConfig buildConfig, TlsConfig tlsConfig) {
-        String kubeConfigYamlWithDefaultNamespace = kubeConfigYaml.replace("""
-                    user: "default"
-                """, """
-                    user: "default"
-                    namespace: "%s"
-                """.formatted(namespace));
-        return Config.fromKubeconfig(kubeConfigYamlWithDefaultNamespace);
+        try {
+            ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+            Map<String, Object> yaml = mapper.readValue(kubeConfigYaml, Map.class);
+
+            Optional.ofNullable(yaml.get("current-context"))
+                    .flatMap(currentContext -> ((List) yaml.getOrDefault("contexts", Collections.emptyMap()))
+                            .stream()
+                            .filter(context -> Objects.equals(((Map) context).get("name"), currentContext))
+                            .findAny()
+                    )
+                    .ifPresent(context -> {
+                        Map<String, String> ctxConfig = (Map) ((Map<String, Map>) context).get("context");
+                        ctxConfig.put("namespace", namespace);
+                    });
+
+            String kubeConfigYamlWithDefaultNamespace = mapper.writeValueAsString(yaml);
+            return Config.fromKubeconfig(kubeConfigYamlWithDefaultNamespace);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
