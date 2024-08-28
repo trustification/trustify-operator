@@ -101,7 +101,7 @@ jobs:
       - name: Start the crc
         run: |
           OPTS=""
-          if [[ -n ${{ secrets.PULL_SECRET }} ]];then
+          if [[ -n "${{ secrets.PULL_SECRET }}" ]];then
             OPTS="-p ${{ secrets.PULL_SECRET }}"
           fi
           sudo -su $USER crc start ${OPTS}
