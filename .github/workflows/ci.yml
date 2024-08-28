@@ -60,7 +60,7 @@ jobs:
     needs: [ crc-presets ]
     strategy:
       matrix:
-        color: ${{ fromJSON(needs.crc-presets.outputs.presets) }}
+        preset: ${{ fromJSON(needs.crc-presets.outputs.presets) }}
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
