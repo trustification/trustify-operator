@@ -49,8 +49,10 @@ jobs:
     steps:
       - name: Define presets
         id: presets
+        env:
+          PULL_SECRET: ${{ secrets.PULL_SECRET }}
         run: |
-          if [[ ${{github.event_name}} != 'pull_request' ]];then
+          if [[ -n "${PULL_SECRET}" ]];then
             echo 'presets=["okd", "openshift", "microshift"]' >> "$GITHUB_OUTPUT"
           else
             echo 'presets=["okd"]' >> "$GITHUB_OUTPUT"
