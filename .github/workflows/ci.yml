@@ -99,10 +99,12 @@ jobs:
       - name: Setup the crc
         run: sudo -su $USER crc setup
       - name: Start the crc
+        env:
+          PULL_SECRET: ${{ secrets.PULL_SECRET }}
         run: |
           OPTS=""
-          if [[ -n "${{ secrets.PULL_SECRET }}" ]];then
-            echo ${{ secrets.PULL_SECRET }} > pull-secret.txt
+          if [[ -n "${PULL_SECRET}" ]];then
+            echo "${PULL_SECRET}" > pull-secret.txt
             OPTS="-p pull-secret.txt"
           fi
           sudo -su $USER crc start ${OPTS}
