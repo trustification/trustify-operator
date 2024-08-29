@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        preset: ["okd"]
+        preset: [ "okd" ]
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
