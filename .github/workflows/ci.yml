@@ -102,7 +102,8 @@ jobs:
         run: |
           OPTS=""
           if [[ -n "${{ secrets.PULL_SECRET }}" ]];then
-            OPTS="-p ${{ secrets.PULL_SECRET }}"
+            echo ${{ secrets.PULL_SECRET }} > pull-secret.txt
+            OPTS="-p pull-secret.txt"
           fi
           sudo -su $USER crc start ${OPTS}
       - name: Test
