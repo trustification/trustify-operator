@@ -11,6 +11,10 @@ on:
         description: "Next version"
         default: "E.g. 5.0.0-SNAPSHOT"
         required: false
+      image-server:
+        description: "The Trustify container image"
+        default: "ghcr.io/trustification/trustd:latest"
+        required: true
 
 jobs:
   prepare:
@@ -24,6 +28,7 @@ jobs:
           cache: maven
       - name: Set release version ${{ github.event.inputs.version }}
         run: |
+          sed -i "/related\.image\.server=/ s/=.*/=ghcr\.io\/trustification\/trustd:${{ github.event.inputs.image-server }}/" src/main/resources/application.properties
           mvn -B versions:set versions:commit -DnewVersion=$NEW_VERSION
         env:
           NEW_VERSION: ${{ github.event.inputs.version }}
