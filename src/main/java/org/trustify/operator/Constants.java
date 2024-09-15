@@ -43,6 +43,7 @@ public class Constants {
     public static final String DB_SECRET_USERNAME = "username";
     public static final String DB_SECRET_PASSWORD = "password";
     public static final String DB_NAME = "trustify";
+    public static final Integer DB_PORT= 5432;
 
     public static final String POSTGRESQL_PVC_SIZE = "10G";
 

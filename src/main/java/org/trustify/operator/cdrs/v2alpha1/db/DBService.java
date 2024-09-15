@@ -49,7 +49,7 @@ public class DBService extends CRUDKubernetesDependentResource<Service, Trustify
     private ServiceSpec getServiceSpec(Trustify cr) {
         return new ServiceSpecBuilder()
                 .addNewPort()
-                .withPort(5432)
+                .withPort(DBDeployment.getDatabasePort(cr))
                 .withProtocol(Constants.SERVICE_PROTOCOL)
                 .endPort()
                 .withSelector(Constants.DB_SELECTOR_LABELS)
@@ -59,15 +59,6 @@ public class DBService extends CRUDKubernetesDependentResource<Service, Trustify
 
     public static String getServiceName(Trustify cr) {
         return cr.getMetadata().getName() + Constants.DB_SERVICE_SUFFIX;
-    }
-
-    public static String getJdbcUrl(Trustify cr) {
-        return String.format(
-                "jdbc:postgresql://%s:%s/%s",
-                cr.getMetadata().getName() + Constants.DB_SERVICE_SUFFIX,
-                5432,
-                Constants.DB_NAME
-        );
     }
 
 }

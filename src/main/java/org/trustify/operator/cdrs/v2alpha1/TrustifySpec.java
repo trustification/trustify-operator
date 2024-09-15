@@ -3,6 +3,7 @@ package org.trustify.operator.cdrs.v2alpha1;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
+import io.fabric8.kubernetes.api.model.SecretKeySelector;
 
 import java.util.List;
 
@@ -50,12 +51,29 @@ public record TrustifySpec(
     }
 
     public record DatabaseSpec(
-            @JsonPropertyDescription("Size of the PVC to create.")
-            String size,
+            @JsonPropertyDescription("Use external database.")
+            boolean externalDatabase,
 
-            @JsonProperty("resourceLimits")
-            @JsonPropertyDescription("In this section you can configure resource limits settings.")
-            ResourcesLimitSpec resourceLimitSpec
+            @JsonPropertyDescription("Size of the PVC to create. Valid only if externalDatabase=false")
+            String pvcSize,
+
+            @JsonPropertyDescription("In this section you can configure resource limits settings. Valid only if externalDatabase=false")
+            ResourcesLimitSpec resourceLimits,
+
+            @JsonPropertyDescription("The reference to a secret holding the username of the database user.")
+            SecretKeySelector usernameSecret,
+
+            @JsonPropertyDescription("The reference to a secret holding the password of the database user.")
+            SecretKeySelector passwordSecret,
+
+            @JsonPropertyDescription("The host of the database.")
+            String host,
+
+            @JsonPropertyDescription("The port of the database.")
+            String port,
+
+            @JsonPropertyDescription("The database name.")
+            String name
     ) {
     }
 

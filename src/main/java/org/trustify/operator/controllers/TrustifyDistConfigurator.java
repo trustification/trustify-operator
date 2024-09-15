@@ -5,15 +5,12 @@ import io.quarkus.logging.Log;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
+import org.trustify.operator.cdrs.v2alpha1.db.DBDeployment;
+import org.trustify.operator.cdrs.v2alpha1.db.DBService;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerStoragePersistentVolumeClaim;
-import org.trustify.operator.cdrs.v2alpha1.db.DBSecret;
-import org.trustify.operator.cdrs.v2alpha1.db.DBService;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -97,15 +94,29 @@ public class TrustifyDistConfigurator {
     }
 
     private void configureDatabase() {
-        String dbSecretName = DBSecret.getSecretName(cr);
-
-        List<EnvVar> envVars = optionMapper(cr.getSpec())
-                .mapOption("TRUSTD_DB_USER", spec -> new SecretKeySelector(Constants.DB_SECRET_USERNAME, dbSecretName, false))
-                .mapOption("TRUSTD_DB_PASSWORD", spec -> new SecretKeySelector(Constants.DB_SECRET_PASSWORD, dbSecretName, false))
-                .mapOption("TRUSTD_DB_HOST", spec -> DBService.getServiceName(cr))
-                .mapOption("TRUSTD_DB_PORT", spec -> 5432)
-                .mapOption("TRUSTD_DB_NAME", spec -> Constants.DB_NAME)
-                .getEnvVars();
+        List<EnvVar> envVars = Optional.ofNullable(cr.getSpec().databaseSpec())
+                .flatMap(databaseSpec -> {
+                    if (databaseSpec.externalDatabase()) {
+                        List<EnvVar> envs = optionMapper(cr.getSpec())
+                                .mapOption("TRUSTD_DB_USER", spec -> databaseSpec.usernameSecret())
+                                .mapOption("TRUSTD_DB_PASSWORD", spec -> databaseSpec.passwordSecret())
+                                .mapOption("TRUSTD_DB_NAME", spec -> databaseSpec.name())
+                                .mapOption("TRUSTD_DB_HOST", spec -> databaseSpec.host())
+                                .mapOption("TRUSTD_DB_PORT", spec -> databaseSpec.port())
+                                .getEnvVars();
+                        return Optional.of(envs);
+                    } else {
+                        return Optional.empty();
+                    }
+                })
+                .orElseGet(() -> optionMapper(cr.getSpec())
+                        .mapOption("TRUSTD_DB_USER", spec -> DBDeployment.getUsernameSecretKeySelector(cr))
+                        .mapOption("TRUSTD_DB_PASSWORD", spec -> DBDeployment.getPasswordSecretKeySelector(cr))
+                        .mapOption("TRUSTD_DB_NAME", spec -> DBDeployment.getDatabaseName(cr))
+                        .mapOption("TRUSTD_DB_HOST", spec -> DBService.getServiceName(cr))
+                        .mapOption("TRUSTD_DB_PORT", spec -> DBDeployment.getDatabasePort(cr))
+                        .getEnvVars()
+                );
 
         allEnvVars.addAll(envVars);
     }

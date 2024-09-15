@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 public class DBDeployment extends CRUDKubernetesDependentResource<Deployment, Trustify>
         implements Matcher<Deployment, Trustify>, Condition<Deployment, Trustify> {
 
-    public static final String LABEL_SELECTOR="app.kubernetes.io/managed-by=trustify-operator,component=db";
+    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=db";
 
     @Inject
     Config config;
@@ -98,7 +98,7 @@ public class DBDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
         String image = Optional.ofNullable(cr.getSpec().dbImage()).orElse(config.dbImage());
         String imagePullPolicy = Optional.ofNullable(cr.getSpec().imagePullPolicy()).orElse(config.imagePullPolicy());
 
-        TrustifySpec.ResourcesLimitSpec resourcesLimitSpec = CRDUtils.getValueFromSubSpec(cr.getSpec().databaseSpec(), TrustifySpec.DatabaseSpec::resourceLimitSpec)
+        TrustifySpec.ResourcesLimitSpec resourcesLimitSpec = CRDUtils.getValueFromSubSpec(cr.getSpec().databaseSpec(), TrustifySpec.DatabaseSpec::resourceLimits)
                 .orElse(null);
 
         return new DeploymentSpecBuilder()
@@ -130,7 +130,7 @@ public class DBDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
                                         .withPorts(new ContainerPortBuilder()
                                                 .withName("tcp")
                                                 .withProtocol(Constants.SERVICE_PROTOCOL)
-                                                .withContainerPort(5432)
+                                                .withContainerPort(getDatabasePort(cr))
                                                 .build()
                                         )
                                         .withLivenessProbe(new ProbeBuilder()
@@ -194,33 +194,70 @@ public class DBDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
         return Arrays.asList(
                 new EnvVarBuilder()
                         .withName("POSTGRESQL_USER")
-                        .withNewValueFrom()
-                        .withNewSecretKeyRef()
-                        .withName(DBSecret.getSecretName(cr))
-                        .withKey(Constants.DB_SECRET_USERNAME)
-                        .withOptional(false)
-                        .endSecretKeyRef()
-                        .endValueFrom()
+                        .withValueFrom(new EnvVarSourceBuilder()
+                                .withSecretKeyRef(getUsernameSecretKeySelector(cr))
+                                .build()
+                        )
                         .build(),
                 new EnvVarBuilder()
                         .withName("POSTGRESQL_PASSWORD")
-                        .withNewValueFrom()
-                        .withNewSecretKeyRef()
-                        .withName(DBSecret.getSecretName(cr))
-                        .withKey(Constants.DB_SECRET_PASSWORD)
-                        .withOptional(false)
-                        .endSecretKeyRef()
-                        .endValueFrom()
+                        .withValueFrom(new EnvVarSourceBuilder()
+                                .withSecretKeyRef(getPasswordSecretKeySelector(cr))
+                                .build()
+                        )
                         .build(),
-
-        new EnvVarBuilder()
+                new EnvVarBuilder()
                         .withName("POSTGRESQL_DATABASE")
-                        .withValue(Constants.DB_NAME)
+                        .withValue(getDatabaseName(cr))
                         .build()
         );
     }
 
     public static String getDeploymentName(Trustify cr) {
         return cr.getMetadata().getName() + Constants.DB_DEPLOYMENT_SUFFIX;
+    }
+
+    public static SecretKeySelector getUsernameSecretKeySelector(Trustify cr) {
+        return Optional.ofNullable(cr.getSpec().databaseSpec())
+                .map(TrustifySpec.DatabaseSpec::usernameSecret)
+                .map(secret -> new SecretKeySelectorBuilder()
+                        .withName(secret.getName())
+                        .withKey(secret.getKey())
+                        .withOptional(false)
+                        .build()
+                )
+                .orElseGet(() -> new SecretKeySelectorBuilder()
+                        .withName(DBSecret.getSecretName(cr))
+                        .withKey(Constants.DB_SECRET_USERNAME)
+                        .withOptional(false)
+                        .build()
+                );
+    }
+
+    public static SecretKeySelector getPasswordSecretKeySelector(Trustify cr) {
+        return Optional.ofNullable(cr.getSpec().databaseSpec())
+                .map(TrustifySpec.DatabaseSpec::passwordSecret)
+                .map(secret -> new SecretKeySelectorBuilder()
+                        .withName(secret.getName())
+                        .withKey(secret.getKey())
+                        .withOptional(false)
+                        .build()
+                )
+                .orElseGet(() -> new SecretKeySelectorBuilder()
+                        .withName(DBSecret.getSecretName(cr))
+                        .withKey(Constants.DB_SECRET_PASSWORD)
+                        .withOptional(false)
+                        .build()
+                );
+    }
+
+    public static String getDatabaseName(Trustify cr) {
+        return Optional.ofNullable(cr.getSpec().databaseSpec())
+                .map(TrustifySpec.DatabaseSpec::name)
+                .orElse(Constants.DB_NAME);
+    }
+
+    public static Integer getDatabasePort(Trustify cr) {
+        return Constants.DB_PORT;
     }
 }

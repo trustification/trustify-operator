@@ -35,7 +35,7 @@ public class DBPersistentVolumeClaim extends CRUDKubernetesDependentResource<Per
         final var labels = (Map<String, String>) context.managedDependentResourceContext()
                 .getMandatory(Constants.CONTEXT_LABELS_KEY, Map.class);
 
-        String pvcStorageSize = CRDUtils.getValueFromSubSpec(cr.getSpec().databaseSpec(), TrustifySpec.DatabaseSpec::size)
+        String pvcStorageSize = CRDUtils.getValueFromSubSpec(cr.getSpec().databaseSpec(), TrustifySpec.DatabaseSpec::pvcSize)
                 .orElse(Constants.POSTGRESQL_PVC_SIZE);
 
         return new PersistentVolumeClaimBuilder()

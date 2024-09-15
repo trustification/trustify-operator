@@ -14,7 +14,7 @@ public class DBServiceDiscriminator implements ResourceDiscriminator<Service, Tr
     public Optional<Service> distinguish(Class<Service> resource, Trustify cr, Context<Trustify> context) {
         String serviceName = DBService.getServiceName(cr);
         ResourceID resourceID = new ResourceID(serviceName, cr.getMetadata().getNamespace());
-        var informerEventSource = (InformerEventSource<Service, Trustify>) context.eventSourceRetriever().getResourceEventSourceFor(Service.class);
+        var informerEventSource = (InformerEventSource<Service, Trustify>) context.eventSourceRetriever().getResourceEventSourceFor(Service.class, "db-service");
         return informerEventSource.get(resourceID);
     }
 }
