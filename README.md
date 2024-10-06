@@ -6,7 +6,7 @@
 
 ```shell
 minikube start --addons=ingress,dashboard
-curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.22.0/install.sh | bash -s v0.22.0
+curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.22.0/install.sh | bash -s v0.28.0
 ```
 
 - Setup ServiceAccount + Role + RoleBinding:
@@ -36,8 +36,6 @@ export IMG=quay.io/${USER}/trustify-operator:v0.0.0
 export BUNDLE_IMG=quay.io/${USER}/trustify-operator-bundle:v0.0.0
 export CATALOG_IMG=quay.io/${USER}/trustify-operator-catalog:v0.0.0
 ```
-
-> use `export DOCKERFILE=Dockerfile.jvm` if you want to be faster and create an operator based on JVM
 
 - Create operator:
 

@@ -20,8 +20,10 @@ RUN dnf install curl zip unzip --allowerasing -y && \
     source "$HOME/.sdkman/bin/sdkman-init.sh" && \
     sdk install java && \
     sdk install groovy && \
-    groovy scripts/enrichCSV.groovy /code/target/bundle/trustify-operator/manifests/trustify-operator.clusterserviceversion.yaml && \
-    echo '  com.redhat.openshift.versions: "v4.10"' >> /code/target/bundle/trustify-operator/metadata/annotations.yaml
+    groovy scripts/enrichCSV.groovy /code/target/bundle/trustify-operator/manifests/trustify-operator.clusterserviceversion.yaml
+RUN curl --output /usr/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 && \
+    chmod +x /usr/bin/yq && \
+    yq e -P -i '.annotations."com.redhat.openshift.versions"="v4.10"'
 
 FROM scratch
 ARG CHANNELS=alpha
@@ -33,7 +35,7 @@ LABEL operators.operatorframework.io.bundle.manifests.v1=manifests/
 LABEL operators.operatorframework.io.bundle.mediatype.v1=registry+v1
 LABEL operators.operatorframework.io.bundle.metadata.v1=metadata/
 LABEL operators.operatorframework.io.bundle.package.v1=trustify-operator
-LABEL operators.operatorframework.io.metrics.builder=qosdk-bundle-generator/6.6.6+6212e1b
+LABEL operators.operatorframework.io.metrics.builder=qosdk-bundle-generator/6.8.2+5def15d
 LABEL operators.operatorframework.io.metrics.mediatype.v1=metrics+v1
 LABEL operators.operatorframework.io.metrics.project_layout=quarkus.javaoperatorsdk.io/v1-alpha
 
