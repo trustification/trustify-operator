@@ -37,8 +37,6 @@ export BUNDLE_IMG=quay.io/${USER}/trustify-operator-bundle:v0.0.0
 export CATALOG_IMG=quay.io/${USER}/trustify-operator-catalog:v0.0.0
 ```
 
-> use `export DOCKERFILE=Dockerfile.jvm` if you want to be faster and create an operator based on JVM
-
 - Create operator:
 
 ```shell
