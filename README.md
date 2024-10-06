@@ -121,7 +121,7 @@ metadata:
   name: trustify-subscription
   namespace: trustify
 spec:
-  channel: development
+  channel: alpha
   name: trustify-operator
   source: trustify-catalog-source
   sourceNamespace: ${CATALOG_NAMESPACE}
