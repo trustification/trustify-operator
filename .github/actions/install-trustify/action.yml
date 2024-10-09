@@ -14,6 +14,10 @@ inputs:
     description: "JSON encoded Trustify Custom Resource (CR) string"
     required: false
     default: ""
+  app-name:
+    description: "Name of the Trustify instance (should match CR metadata if passed)"
+    required: false
+    default: "myapp"
 runs:
   using: "composite"
   steps:
@@ -39,6 +43,7 @@ runs:
       env:
         OPERATOR_BUNDLE_IMAGE: ${{ inputs.operator-bundle-image }}
         NAMESPACE: ${{ inputs.namespace }}
+        APP_NAME: ${{ inputs.app-name }}
         TRUSTIFY_CR: ${{ inputs.trustify-cr }}
       run: |
         make install-trustify
