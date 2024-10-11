@@ -1,4 +1,4 @@
-package org.trustify.operator.cdrs.v2alpha1.server;
+package org.trustify.operator.cdrs.v2alpha1.ui;
 
 import io.fabric8.kubernetes.api.model.Service;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -10,10 +10,10 @@ import org.trustify.operator.controllers.TrustifyReconciler;
 
 import java.util.Optional;
 
-public class ServerServiceDiscriminator implements ResourceDiscriminator<Service, Trustify> {
+public class UIServiceDiscriminator implements ResourceDiscriminator<Service, Trustify> {
     @Override
     public Optional<Service> distinguish(Class<Service> resource, Trustify cr, Context<Trustify> context) {
-        String serviceName = ServerService.getServiceName(cr);
+        String serviceName = UIService.getServiceName(cr);
         ResourceID resourceID = new ResourceID(serviceName, cr.getMetadata().getNamespace());
         var informerEventSource = (InformerEventSource<Service, Trustify>) context.eventSourceRetriever().getResourceEventSourceFor(Service.class, TrustifyReconciler.SERVICE_EVENT_SOURCE);
         return informerEventSource.get(resourceID);

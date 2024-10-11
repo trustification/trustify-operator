@@ -12,8 +12,10 @@ import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifyStatusCondition;
 import org.trustify.operator.cdrs.v2alpha1.db.*;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerDeployment;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerIngress;
+import org.trustify.operator.cdrs.v2alpha1.ui.UIDeployment;
+import org.trustify.operator.cdrs.v2alpha1.ui.UIIngress;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
+import org.trustify.operator.cdrs.v2alpha1.ui.UIService;
 
 import java.time.Duration;
 import java.util.Map;
@@ -44,29 +46,36 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
                 @Dependent(
                         name = "db-service",
                         type = DBService.class,
-                        dependsOn = {"db-deployment"},
                         activationCondition = DBServiceActivationCondition.class
                 ),
 
                 @Dependent(
                         name = "server-deployment",
                         type = ServerDeployment.class,
-//                        dependsOn = {"db-service"},
                         readyPostcondition = ServerDeployment.class,
-                        useEventSourceWithName = "server-deployment"
+                        useEventSourceWithName = TrustifyReconciler.DEPLOYMENT_EVENT_SOURCE
                 ),
                 @Dependent(
                         name = "server-service",
                         type = ServerService.class,
-                        dependsOn = {"server-deployment"},
-                        useEventSourceWithName = "server-service"
+                        useEventSourceWithName = TrustifyReconciler.SERVICE_EVENT_SOURCE
                 ),
 
                 @Dependent(
-                        name = "ingress",
-                        type = ServerIngress.class,
-                        dependsOn = {"server-service"},
-                        readyPostcondition = ServerIngress.class
+                        name = "ui-deployment",
+                        type = UIDeployment.class,
+                        readyPostcondition = UIDeployment.class,
+                        useEventSourceWithName = TrustifyReconciler.DEPLOYMENT_EVENT_SOURCE
+                ),
+                @Dependent(
+                        name = "ui-service",
+                        type = UIService.class,
+                        useEventSourceWithName = TrustifyReconciler.SERVICE_EVENT_SOURCE
+                ),
+                @Dependent(
+                        name = "ui-ingress",
+                        type = UIIngress.class,
+                        readyPostcondition = UIIngress.class
                 )
         }
 )
@@ -74,8 +83,8 @@ public class TrustifyReconciler implements Reconciler<Trustify>, ContextInitiali
 
     private static final Logger logger = Logger.getLogger(TrustifyReconciler.class);
 
-    public static final String SERVER_DEPLOYMENT_EVENT_SOURCE = "server-deployment";
-    public static final String SERVER_SERVICE_EVENT_SOURCE = "server-service";
+    public static final String DEPLOYMENT_EVENT_SOURCE = "deploymentSource";
+    public static final String SERVICE_EVENT_SOURCE = "serviceSource";
 
     @Override
     public void initContext(Trustify cr, Context<Trustify> context) {
@@ -128,8 +137,8 @@ public class TrustifyReconciler implements Reconciler<Trustify>, ContextInitiali
         var serverServiceInformerEventSource = new InformerEventSource<>(serverServiceInformerConfiguration, context);
 
         return Map.of(
-                SERVER_DEPLOYMENT_EVENT_SOURCE, serverDeploymentInformerEventSource,
-                SERVER_SERVICE_EVENT_SOURCE, serverServiceInformerEventSource
+                DEPLOYMENT_EVENT_SOURCE, serverDeploymentInformerEventSource,
+                SERVICE_EVENT_SOURCE, serverServiceInformerEventSource
         );
     }
 }

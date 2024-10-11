@@ -1,4 +1,4 @@
-package org.trustify.operator.cdrs.v2alpha1.server;
+package org.trustify.operator.cdrs.v2alpha1.ui;
 
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -10,10 +10,10 @@ import org.trustify.operator.controllers.TrustifyReconciler;
 
 import java.util.Optional;
 
-public class ServerDeploymentDiscriminator implements ResourceDiscriminator<Deployment, Trustify> {
+public class UIDeploymentDiscriminator implements ResourceDiscriminator<Deployment, Trustify> {
     @Override
     public Optional<Deployment> distinguish(Class<Deployment> resource, Trustify cr, Context<Trustify> context) {
-        String deploymentName = ServerDeployment.getDeploymentName(cr);
+        String deploymentName = UIDeployment.getDeploymentName(cr);
         ResourceID resourceID = new ResourceID(deploymentName, cr.getMetadata().getNamespace());
         var informerEventSource = (InformerEventSource<Deployment, Trustify>) context.eventSourceRetriever().getResourceEventSourceFor(Deployment.class, TrustifyReconciler.DEPLOYMENT_EVENT_SOURCE);
         return informerEventSource.get(resourceID);

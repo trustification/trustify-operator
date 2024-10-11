@@ -8,6 +8,9 @@ import io.fabric8.kubernetes.api.model.SecretKeySelector;
 import java.util.List;
 
 public record TrustifySpec(
+        @JsonPropertyDescription("Custom Trustify UI image to be used. For internal use only")
+        String uiImage,
+
         @JsonPropertyDescription("Custom Trustify Server image to be used. For internal use only")
         String serverImage,
 
@@ -32,6 +35,10 @@ public record TrustifySpec(
         @JsonPropertyDescription("In this section you can configure features related to HTTP and HTTPS")
         HttpSpec httpSpec,
 
+        @JsonProperty("uiResourceLimits")
+        @JsonPropertyDescription("In this section you can configure resource limits settings for the UI.")
+        ResourcesLimitSpec uiResourceLimitSpec,
+
         @JsonProperty("serverResourceLimits")
         @JsonPropertyDescription("In this section you can configure resource limits settings for the Server.")
         ResourcesLimitSpec serverResourceLimitSpec
@@ -39,6 +46,8 @@ public record TrustifySpec(
 
     public TrustifySpec() {
         this(
+                null,
+                null,
                 null,
                 null,
                 null,

@@ -10,6 +10,7 @@ public class Constants {
 
     //
     public static final String TRUSTI_NAME = "trustify";
+    public static final String TRUSTI_UI_NAME = "trustify-ui";
     public static final String TRUSTI_SERVER_NAME = "trustify-server";
     public static final String TRUSTI_DB_NAME = "trustify-db";
 
@@ -19,6 +20,9 @@ public class Constants {
     );
     public static final Map<String, String> SERVER_SELECTOR_LABELS = Map.of(
             "trustify-operator/group", "server"
+    );
+    public static final Map<String, String> UI_SELECTOR_LABELS = Map.of(
+            "trustify-operator/group", "ui"
     );
 
     //
@@ -32,6 +36,9 @@ public class Constants {
     public static final String DB_SECRET_SUFFIX = "-" + TRUSTI_DB_NAME + "-secret";
     public static final String DB_DEPLOYMENT_SUFFIX = "-" + TRUSTI_DB_NAME + "-deployment";
     public static final String DB_SERVICE_SUFFIX = "-" + TRUSTI_DB_NAME + "-service";
+
+    public static final String UI_DEPLOYMENT_SUFFIX = "-" + TRUSTI_UI_NAME + "-deployment";
+    public static final String UI_SERVICE_SUFFIX = "-" + TRUSTI_UI_NAME + "-service";
 
     public static final String SERVER_DEPLOYMENT_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-deployment";
     public static final String SERVER_SERVICE_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-service";
