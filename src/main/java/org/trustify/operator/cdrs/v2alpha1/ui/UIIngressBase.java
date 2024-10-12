@@ -1,4 +1,4 @@
-package org.trustify.operator.cdrs.v2alpha1.server;
+package org.trustify.operator.cdrs.v2alpha1.ui;
 
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
@@ -21,12 +21,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public abstract class ServerIngressBase extends CRUDKubernetesDependentResource<Ingress, Trustify> implements Condition<Ingress, Trustify> {
+public abstract class UIIngressBase extends CRUDKubernetesDependentResource<Ingress, Trustify> implements Condition<Ingress, Trustify> {
 
     @Inject
     KubernetesClient k8sClient;
 
-    public ServerIngressBase() {
+    public UIIngressBase() {
         super(Ingress.class);
     }
 
@@ -38,7 +38,7 @@ public abstract class ServerIngressBase extends CRUDKubernetesDependentResource<
         final var labels = (Map<String, String>) context.managedDependentResourceContext()
                 .getMandatory(Constants.CONTEXT_LABELS_KEY, Map.class);
 
-        var port = ServerService.getServicePort(cr);
+        var port = UIService.getServicePort(cr);
 
         String hostname = getHostname(cr);
         IngressTLS ingressTLS = getIngressTLS(cr);
@@ -62,7 +62,7 @@ public abstract class ServerIngressBase extends CRUDKubernetesDependentResource<
                                 .withPathType("Prefix")
                                 .withNewBackend()
                                     .withNewService()
-                                        .withName(ServerService.getServiceName(cr))
+                                        .withName(UIService.getServiceName(cr))
                                         .withNewPort()
                                         .withNumber(port)
                                         .endPort()
