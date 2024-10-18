@@ -32,6 +32,10 @@ public record TrustifySpec(
         @JsonPropertyDescription("In this section you can configure features related to HTTP and HTTPS")
         HttpSpec httpSpec,
 
+        @JsonProperty("oidc")
+        @JsonPropertyDescription("In this section you can configure Oidc settings.")
+        OidcSpec oidcSpec,
+
         @JsonProperty("serverResourceLimits")
         @JsonPropertyDescription("In this section you can configure resource limits settings for the Server.")
         ResourcesLimitSpec serverResourceLimitSpec
@@ -39,6 +43,7 @@ public record TrustifySpec(
 
     public TrustifySpec() {
         this(
+                null,
                 null,
                 null,
                 null,
@@ -86,6 +91,20 @@ public record TrustifySpec(
     public record HttpSpec(
             @JsonPropertyDescription("A secret containing the TLS configuration for HTTPS. Reference: https://kubernetes.io/docs/concepts/configuration/secret/#tls-secrets.")
             String tlsSecret
+    ) {
+    }
+
+    public record OidcSpec(
+            @JsonPropertyDescription("Enable Oidc Auth.")
+            String enabled,
+            @JsonPropertyDescription("Oidc server url.")
+            String serverUrl,
+            @JsonPropertyDescription("Oidc client id.")
+            String clientId,
+
+            @JsonProperty("db")
+            @JsonPropertyDescription("In this section you can find all properties related to connect to a database.")
+            DatabaseSpec databaseSpec
     ) {
     }
 
