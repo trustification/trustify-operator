@@ -122,11 +122,9 @@ public class TrustifyReconciler implements Reconciler<Trustify>, ContextInitiali
 
     @Override
     public Map<String, EventSource> prepareEventSources(EventSourceContext<Trustify> context) {
-        var pvcInformerConfiguration = InformerConfiguration.from(PersistentVolumeClaim.class, context).build();
         var deploymentInformerConfiguration = InformerConfiguration.from(Deployment.class, context).build();
         var serviceInformerConfiguration = InformerConfiguration.from(Service.class, context).build();
 
-        var pvcInformerEventSource = new InformerEventSource<>(pvcInformerConfiguration, context);
         var deploymentInformerEventSource = new InformerEventSource<>(deploymentInformerConfiguration, context);
         var serviceInformerEventSource = new InformerEventSource<>(serviceInformerConfiguration, context);
 
