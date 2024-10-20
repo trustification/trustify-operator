@@ -96,15 +96,13 @@ public record TrustifySpec(
 
     public record OidcSpec(
             @JsonPropertyDescription("Enable Oidc Auth.")
-            String enabled,
+            boolean enabled,
             @JsonPropertyDescription("Oidc server url.")
             String serverUrl,
-            @JsonPropertyDescription("Oidc client id.")
-            String clientId,
-
-            @JsonProperty("db")
-            @JsonPropertyDescription("In this section you can find all properties related to connect to a database.")
-            DatabaseSpec databaseSpec
+            @JsonPropertyDescription("Oidc client id for the UI.")
+            String uiClientId,
+            @JsonPropertyDescription("Oidc client id for the Server.")
+            String serverClientId
     ) {
     }
 

@@ -42,4 +42,3 @@ LABEL operators.operatorframework.io.metrics.project_layout=quarkus.javaoperator
 # Copy files to locations specified by labels.
 COPY --from=bundle /code/target/bundle/trustify-operator/manifests /manifests/
 COPY --from=bundle /code/target/bundle/trustify-operator/metadata /metadata/
-COPY ./bundle/metadata /metadata/
