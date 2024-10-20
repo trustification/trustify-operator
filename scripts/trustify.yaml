@@ -2,11 +2,4 @@ apiVersion: "org.trustify/v1alpha1"
 kind: "Trustify"
 metadata:
   name: myapp
-spec: {
-  oidc: {
-          enabled: true,
-          serverUrl: "https://app.please-open.it/auth/realms/937984b7-f290-4c0b-8f2a-04ae9b22b5d6",
-          uiClientId: "windup-web",
-          serverClientId: "windup-web"
-  }
-}
+spec: { }
