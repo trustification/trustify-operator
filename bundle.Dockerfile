@@ -15,13 +15,13 @@ RUN ./mvnw package -DskipTests ${QUARKUS_OPTS} -Dquarkus.operator-sdk.bundle.cha
 FROM registry.access.redhat.com/ubi9/ubi:latest AS bundle
 COPY scripts /scripts
 COPY --from=build /code/target/bundle/trustify-operator/ /code/target/bundle/trustify-operator/
-RUN dnf install curl zip unzip --allowerasing -y && \
+RUN dnf install curl zip unzip wget --allowerasing -y && \
     curl -s "https://get.sdkman.io?rcupdate=false" | bash && \
     source "$HOME/.sdkman/bin/sdkman-init.sh" && \
     sdk install java && \
     sdk install groovy && \
     groovy scripts/enrichCSV.groovy /code/target/bundle/trustify-operator/manifests/trustify-operator.clusterserviceversion.yaml
-RUN curl --output /usr/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 && \
+RUN wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && \
     chmod +x /usr/bin/yq && \
     yq e -P -i '.annotations."com.redhat.openshift.versions"="v4.10"' /code/target/bundle/trustify-operator/metadata/annotations.yaml
 
