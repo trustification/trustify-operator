@@ -23,7 +23,7 @@ RUN dnf install curl zip unzip --allowerasing -y && \
     groovy scripts/enrichCSV.groovy /code/target/bundle/trustify-operator/manifests/trustify-operator.clusterserviceversion.yaml
 RUN curl --output /usr/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 && \
     chmod +x /usr/bin/yq && \
-    yq e -P -i '.annotations."com.redhat.openshift.versions"="v4.10"'
+    yq e -P -i '.annotations."com.redhat.openshift.versions"="v4.10"' /code/target/bundle/trustify-operator/metadata/annotations.yaml
 
 FROM scratch
 ARG CHANNELS=alpha

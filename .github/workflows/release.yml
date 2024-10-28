@@ -26,9 +26,18 @@ jobs:
           java-version: 21
           distribution: temurin
           cache: maven
+      - name: Prepare application.yaml
+        run: |
+          # Install yq
+          RUN curl --output /usr/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          chmod +x /usr/bin/yq
+          
+          # Prepare application.yaml
+          yq e -P -i '.related.image.server=strenv(IMAGE_SERVER)' src/main/resources/application.yaml
+        env:
+          IMAGE_SERVER: ghcr.io/trustification/trustd:${{ github.event.inputs.image-server }}
       - name: Set release version ${{ github.event.inputs.version }}
         run: |
-          sed -i "/related\.image\.server=/ s/=.*/=ghcr\.io\/trustification\/trustd:${{ github.event.inputs.image-server }}/" src/main/resources/application.properties
           mvn -B versions:set versions:commit -DnewVersion=$NEW_VERSION
         env:
           NEW_VERSION: ${{ github.event.inputs.version }}
@@ -143,7 +152,7 @@ jobs:
           branch: ${{ github.event.inputs.version }}
           push-to-fork: trustification/community-operators
           title: "trustify-operator-${{ github.event.inputs.version }}"
-#          body-path: ./changelog.md
+      #          body-path: ./changelog.md
 
       - name: Create Pull Request - Red Hat Community Operators
         uses: peter-evans/create-pull-request@v5
@@ -158,7 +167,7 @@ jobs:
           branch: ${{ github.event.inputs.version }}
           push-to-fork: trustification/community-operators-prod
           title: "trustify-operator-${{ github.event.inputs.version }}"
-#          body-path: ./changelog.md
+      #          body-path: ./changelog.md
 
       - name: PR Notifications
         run: |

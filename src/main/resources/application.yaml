@@ -1,0 +1,53 @@
+# Operator config
+related:
+  image:
+    server: carlos
+    db: ${RELATED_IMAGE_DB:quay.io/sclorg/postgresql-15-c9s:latest}
+    pull-policy: Always
+    carlos: v4.10
+quarkus:
+  container-image:
+    registry: ghcr.io
+    tag: v${quarkus.application.version}
+  # Increase test hang time since the operator takes time to initiate all deployments
+  test:
+    hang-detection-timeout: 30M
+  operator-sdk:
+    crd:
+      # set to true to automatically apply CRDs to the cluster when they get regenerated
+      apply: true
+    namespaces: JOSDK_WATCH_CURRENT
+    generate-with-watched-namespaces: JOSDK_WATCH_CURRENT
+    helm:
+      enabled: true
+  # https://quarkus.io/guides/deploying-to-kubernetes#environment-variables-from-keyvalue-pairs
+  openshift:
+    env:
+      vars:
+        related-image-trustify-server: ${related.image.server}
+        related-image-db: ${related.image.db}
+        related-image-importer: ${related.image.importer}
+  kubernetes:
+    env:
+      vars:
+        related-image-trustify-server: ${related.image.server}
+        related-image-db: ${related.image.db}
+        related-image-importer: ${related.image.importer}
+    resources:
+      requests:
+        memory: 64Mi
+        cpu: 50m
+      limits:
+        memory: 256Mi
+        cpu: 250m
+    rbac:
+      roles:
+        trustify:
+          policy-rules:
+            - api-groups:
+              resources: '*'
+              verbs: '*'
+            - api-groups: security.openshift.io
+              resources: securitycontextconstraints
+              verbs: use
+              resource-names: anyuid
