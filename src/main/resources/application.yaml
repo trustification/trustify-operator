@@ -4,7 +4,8 @@ related:
     server: carlos
     db: ${RELATED_IMAGE_DB:quay.io/sclorg/postgresql-15-c9s:latest}
     pull-policy: Always
-    carlos: v4.10
+
+# Quarkus config
 quarkus:
   container-image:
     registry: ghcr.io
