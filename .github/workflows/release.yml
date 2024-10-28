@@ -152,7 +152,7 @@ jobs:
           branch: ${{ github.event.inputs.version }}
           push-to-fork: trustification/community-operators
           title: "trustify-operator-${{ github.event.inputs.version }}"
-      #          body-path: ./changelog.md
+#          body-path: ./changelog.md
 
       - name: Create Pull Request - Red Hat Community Operators
         uses: peter-evans/create-pull-request@v5
@@ -167,7 +167,7 @@ jobs:
           branch: ${{ github.event.inputs.version }}
           push-to-fork: trustification/community-operators-prod
           title: "trustify-operator-${{ github.event.inputs.version }}"
-      #          body-path: ./changelog.md
+#          body-path: ./changelog.md
 
       - name: PR Notifications
         run: |
