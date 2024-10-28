@@ -4,7 +4,6 @@ related:
     server: ${RELATED_IMAGE_SERVER:ghcr.io/trustification/trustd:latest}
     db: ${RELATED_IMAGE_DB:quay.io/sclorg/postgresql-15-c9s:latest}
     pull-policy: Always
-
 # Quarkus config
 quarkus:
   container-image:
