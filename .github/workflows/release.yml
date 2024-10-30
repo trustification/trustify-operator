@@ -15,6 +15,10 @@ on:
         description: "The Trustify container image"
         default: "ghcr.io/trustification/trustd:latest"
         required: true
+      image-db:
+        description: "The Database container image"
+        default: "quay.io/sclorg/postgresql-15-c9s:latest"
+        required: true
 
 jobs:
   prepare:
@@ -26,9 +30,20 @@ jobs:
           java-version: 21
           distribution: temurin
           cache: maven
+      - name: Prepare application.yaml
+        run: |
+          # Install yq
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
+          chmod +x /usr/bin/yq
+          
+          # Prepare application.yaml
+          yq e -P -i '.related.image.server=strenv(IMAGE_SERVER)' src/main/resources/application.yaml
+          yq e -P -i '.related.image.db=strenv(IMAGE_DB)' src/main/resources/application.yaml
+        env:
+          IMAGE_SERVER: ${{ github.event.inputs.image-server }}
+          IMAGE_DB: ${{ github.event.inputs.image-db }}
       - name: Set release version ${{ github.event.inputs.version }}
         run: |
-          sed -i "/related\.image\.server=/ s/=.*/=ghcr\.io\/trustification\/trustd:${{ github.event.inputs.image-server }}/" src/main/resources/application.properties
           mvn -B versions:set versions:commit -DnewVersion=$NEW_VERSION
         env:
           NEW_VERSION: ${{ github.event.inputs.version }}
@@ -67,6 +82,15 @@ jobs:
         with:
           name: jreleaser-log
           path: 'jreleaser-log.tgz'
+      - name: Restore application.yaml
+        run: |
+          # Install yq
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
+          chmod +x /usr/bin/yq
+
+          # Prepare application.yaml
+          yq e -P -i '.related.image.server="${RELATED_IMAGE_SERVER:ghcr.io/trustification/trustd:latest}"' src/main/resources/application.yaml
+          yq e -P -i '.related.image.db="${RELATED_IMAGE_DB:quay.io/sclorg/postgresql-15-c9s:latest}"' src/main/resources/application.yaml
       - name: Set version ${{ github.event.inputs.next }}
         run: |
           mvn -B versions:set versions:commit -DnewVersion=$NEW_VERSION
