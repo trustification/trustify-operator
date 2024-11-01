@@ -75,6 +75,10 @@ public class ServerService extends CRUDKubernetesDependentResource<Service, Trus
         return cr.getMetadata().getName() + Constants.SERVER_SERVICE_SUFFIX;
     }
 
+    public static String getServiceUrl(Trustify cr) {
+        return String.format("http://%s:%s", getServiceName(cr), getServicePort(cr));
+    }
+
     public static boolean isTlsConfigured(Trustify cr) {
         var tlsSecret = CRDUtils.getValueFromSubSpec(cr.getSpec().httpSpec(), TrustifySpec.HttpSpec::tlsSecret);
         return tlsSecret.isPresent() && !tlsSecret.get().trim().isEmpty();

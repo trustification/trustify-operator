@@ -202,7 +202,7 @@ public class UIDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
                         .build(),
                 new EnvVarBuilder()
                         .withName("TRUSTIFY_API_URL")
-                        .withValue(ServerService.getServiceName(cr))
+                        .withValue(ServerService.getServiceUrl(cr))
                         .build(),
                 new EnvVarBuilder()
                         .withName("UI_INGRESS_PROXY_BODY_SIZE")
