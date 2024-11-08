@@ -37,7 +37,7 @@ public class Constants {
     public static final String SERVER_SERVICE_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-service";
 
 
-    public static final String INGRESS_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-ingress";
+    public static final String INGRESS_SUFFIX = "-" + TRUSTI_NAME + "-ingress";
 
     //
     public static final String DB_SECRET_USERNAME = "username";
