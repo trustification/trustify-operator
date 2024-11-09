@@ -146,9 +146,21 @@ public class TrustifyDistConfigurator {
     }
 
     private void configureOidc() {
-        List<EnvVar> envVars = optionMapper(cr.getSpec())
-                .mapOption("AUTH_DISABLED", spec -> true)
-                .getEnvVars();
+        List<EnvVar> envVars = Optional.ofNullable(cr.getSpec().oidcSpec())
+                .map(oidcSpec -> optionMapper(oidcSpec)
+                        .mapOption("AUTH_DISABLED", spec -> !spec.enabled())
+                        .mapOption("AUTHENTICATOR_OIDC_ISSUER_URL", TrustifySpec.OidcSpec::serverUrl)
+                        .mapOption("AUTHENTICATOR_OIDC_CLIENT_IDS", TrustifySpec.OidcSpec::serverClientId)
+                        .mapOption("UI_ISSUER_URL", TrustifySpec.OidcSpec::serverUrl)
+                        .mapOption("UI_CLIENT_ID", TrustifySpec.OidcSpec::uiClientId)
+                        .getEnvVars()
+                )
+                .orElseGet(() -> List.of(new EnvVarBuilder()
+                        .withName("AUTH_DISABLED")
+                        .withValue(Boolean.TRUE.toString())
+                        .build())
+                );
+
         allEnvVars.addAll(envVars);
     }
 

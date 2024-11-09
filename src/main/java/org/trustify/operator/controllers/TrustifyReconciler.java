@@ -1,5 +1,6 @@
 package org.trustify.operator.controllers;
 
+import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.javaoperatorsdk.operator.api.config.informer.InformerConfiguration;
@@ -130,15 +131,15 @@ public class TrustifyReconciler implements Reconciler<Trustify>, ContextInitiali
 
     @Override
     public Map<String, EventSource> prepareEventSources(EventSourceContext<Trustify> context) {
-        var serverDeploymentInformerConfiguration = InformerConfiguration.from(Deployment.class, context).build();
-        var serverServiceInformerConfiguration = InformerConfiguration.from(Service.class, context).build();
+        var deploymentInformerConfiguration = InformerConfiguration.from(Deployment.class, context).build();
+        var serviceInformerConfiguration = InformerConfiguration.from(Service.class, context).build();
 
-        var serverDeploymentInformerEventSource = new InformerEventSource<>(serverDeploymentInformerConfiguration, context);
-        var serverServiceInformerEventSource = new InformerEventSource<>(serverServiceInformerConfiguration, context);
+        var deploymentInformerEventSource = new InformerEventSource<>(deploymentInformerConfiguration, context);
+        var serviceInformerEventSource = new InformerEventSource<>(serviceInformerConfiguration, context);
 
         return Map.of(
-                DEPLOYMENT_EVENT_SOURCE, serverDeploymentInformerEventSource,
-                SERVICE_EVENT_SOURCE, serverServiceInformerEventSource
+                DEPLOYMENT_EVENT_SOURCE, deploymentInformerEventSource,
+                SERVICE_EVENT_SOURCE, serviceInformerEventSource
         );
     }
 }
