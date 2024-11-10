@@ -122,25 +122,49 @@ public class TrustifyDistConfigurator {
     }
 
     private void configureStorage() {
-        List<EnvVar> envVars = optionMapper(cr.getSpec())
-                .mapOption("TRUSTD_STORAGE_FS_PATH", spec -> "/opt/trustify/storage")
+        List<EnvVar> envVars = optionMapper(cr.getSpec().storageSpec())
+                .mapOption("TRUSTD_STORAGE_COMPRESSION", spec -> spec.compression().getValue())
+                .mapOption("TRUSTD_STORAGE_STRATEGY", spec -> spec.type().getValue())
                 .getEnvVars();
 
-        var volume = new VolumeBuilder()
-                .withName("trustify-pvol")
-                .withPersistentVolumeClaim(new PersistentVolumeClaimVolumeSourceBuilder()
-                        .withClaimName(ServerStoragePersistentVolumeClaim.getPersistentVolumeClaimName(cr))
-                        .build()
-                )
-                .build();
+        // Filesystem
+        Optional.ofNullable(cr.getSpec().storageSpec())
+                .flatMap(storageSpec -> Optional.ofNullable(storageSpec.filesystemStorageSpec()))
+                .ifPresent(filesystemStorageSpec -> {
+                    List<EnvVar> filesystemEnvVars = optionMapper(filesystemStorageSpec)
+                            .mapOption("TRUSTD_STORAGE_FS_PATH", spec -> "/opt/trustify/storage")
+                            .getEnvVars();
+                    envVars.addAll(filesystemEnvVars);
 
-        var volumeMount = new VolumeMountBuilder()
-                .withName(volume.getName())
-                .withMountPath("/opt/trustify")
-                .build();
+                    var volume = new VolumeBuilder()
+                            .withName("trustify-pvol")
+                            .withPersistentVolumeClaim(new PersistentVolumeClaimVolumeSourceBuilder()
+                                    .withClaimName(ServerStoragePersistentVolumeClaim.getPersistentVolumeClaimName(cr))
+                                    .build()
+                            )
+                            .build();
 
-        allVolumes.add(volume);
-        allVolumeMounts.add(volumeMount);
+                    var volumeMount = new VolumeMountBuilder()
+                            .withName(volume.getName())
+                            .withMountPath("/opt/trustify")
+                            .build();
+
+                    allVolumes.add(volume);
+                    allVolumeMounts.add(volumeMount);
+                });
+
+        // S3
+        Optional.ofNullable(cr.getSpec().storageSpec())
+                .flatMap(storageSpec -> Optional.ofNullable(storageSpec.s3StorageSpec()))
+                .ifPresent(s3StorageSpec -> {
+                    List<EnvVar> s3EnvVars = optionMapper(s3StorageSpec)
+                            .mapOption("TRUSTD_S3_BUCKET", TrustifySpec.S3StorageSpec::bucket)
+                            .mapOption("TRUSTD_S3_REGION", TrustifySpec.S3StorageSpec::region)
+                            .mapOption("TRUSTD_S3_ACCESS_KEY", TrustifySpec.S3StorageSpec::accessKey)
+                            .mapOption("TRUSTD_S3_SECRET_KEY", TrustifySpec.S3StorageSpec::secretKey)
+                            .getEnvVars();
+                    envVars.addAll(s3EnvVars);
+                });
 
         allEnvVars.addAll(envVars);
     }
