@@ -17,7 +17,7 @@ public class ServerStoragePersistentVolumeClaimActivationCondition implements Co
     @Override
     public boolean isMet(DependentResource<PersistentVolumeClaim, Trustify> resource, Trustify cr, Context<Trustify> context) {
         return Optional.ofNullable(cr.getSpec().storageSpec())
-                .map(storageSpec -> Objects.equals(TrustifySpec.StorageStrategyType.FILESYSTEM, storageSpec.type()))
+                .map(storageSpec -> Objects.isNull(storageSpec.type()) || Objects.equals(TrustifySpec.StorageStrategyType.FILESYSTEM, storageSpec.type()))
                 .orElse(true);
     }
 

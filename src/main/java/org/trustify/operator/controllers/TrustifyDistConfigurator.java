@@ -122,49 +122,51 @@ public class TrustifyDistConfigurator {
     }
 
     private void configureStorage() {
-        List<EnvVar> envVars = optionMapper(cr.getSpec().storageSpec())
-                .mapOption("TRUSTD_STORAGE_COMPRESSION", spec -> spec.compression().getValue())
-                .mapOption("TRUSTD_STORAGE_STRATEGY", spec -> spec.type().getValue())
+        TrustifySpec.StorageSpec storageSpec = cr.getSpec().storageSpec();
+        TrustifySpec.StorageStrategyType storageStrategyType = Objects.nonNull(storageSpec) && Objects.nonNull(storageSpec.type()) ? storageSpec.type() : TrustifySpec.StorageStrategyType.FILESYSTEM;
+
+        List<EnvVar> envVars = optionMapper(storageSpec)
+                .mapOption("TRUSTD_STORAGE_COMPRESSION", spec -> Objects.nonNull(spec) && Objects.nonNull(spec.compression()) ? spec.compression().getValue() : null)
+                .mapOption("TRUSTD_STORAGE_STRATEGY", spec -> storageStrategyType.getValue())
                 .getEnvVars();
 
-        // Filesystem
-        Optional.ofNullable(cr.getSpec().storageSpec())
-                .flatMap(storageSpec -> Optional.ofNullable(storageSpec.filesystemStorageSpec()))
-                .ifPresent(filesystemStorageSpec -> {
-                    List<EnvVar> filesystemEnvVars = optionMapper(filesystemStorageSpec)
-                            .mapOption("TRUSTD_STORAGE_FS_PATH", spec -> "/opt/trustify/storage")
-                            .getEnvVars();
-                    envVars.addAll(filesystemEnvVars);
+        switch (storageStrategyType) {
+            case FILESYSTEM -> {
+                List<EnvVar> filesystemEnvVars = optionMapper(storageSpec)
+                        .mapOption("TRUSTD_STORAGE_FS_PATH", spec -> "/opt/trustify/storage")
+                        .getEnvVars();
+                envVars.addAll(filesystemEnvVars);
 
-                    var volume = new VolumeBuilder()
-                            .withName("trustify-pvol")
-                            .withPersistentVolumeClaim(new PersistentVolumeClaimVolumeSourceBuilder()
-                                    .withClaimName(ServerStoragePersistentVolumeClaim.getPersistentVolumeClaimName(cr))
-                                    .build()
-                            )
-                            .build();
+                var volume = new VolumeBuilder()
+                        .withName("trustify-pvol")
+                        .withPersistentVolumeClaim(new PersistentVolumeClaimVolumeSourceBuilder()
+                                .withClaimName(ServerStoragePersistentVolumeClaim.getPersistentVolumeClaimName(cr))
+                                .build()
+                        )
+                        .build();
 
-                    var volumeMount = new VolumeMountBuilder()
-                            .withName(volume.getName())
-                            .withMountPath("/opt/trustify")
-                            .build();
+                var volumeMount = new VolumeMountBuilder()
+                        .withName(volume.getName())
+                        .withMountPath("/opt/trustify")
+                        .build();
 
-                    allVolumes.add(volume);
-                    allVolumeMounts.add(volumeMount);
-                });
-
-        // S3
-        Optional.ofNullable(cr.getSpec().storageSpec())
-                .flatMap(storageSpec -> Optional.ofNullable(storageSpec.s3StorageSpec()))
-                .ifPresent(s3StorageSpec -> {
-                    List<EnvVar> s3EnvVars = optionMapper(s3StorageSpec)
-                            .mapOption("TRUSTD_S3_BUCKET", TrustifySpec.S3StorageSpec::bucket)
-                            .mapOption("TRUSTD_S3_REGION", TrustifySpec.S3StorageSpec::region)
-                            .mapOption("TRUSTD_S3_ACCESS_KEY", TrustifySpec.S3StorageSpec::accessKey)
-                            .mapOption("TRUSTD_S3_SECRET_KEY", TrustifySpec.S3StorageSpec::secretKey)
-                            .getEnvVars();
-                    envVars.addAll(s3EnvVars);
-                });
+                allVolumes.add(volume);
+                allVolumeMounts.add(volumeMount);
+            }
+            case S3 -> {
+                List<EnvVar> s3EnvVars = Optional.ofNullable(storageSpec)
+                        .flatMap(spec -> Optional.ofNullable(spec.s3StorageSpec()))
+                        .map(spec -> optionMapper(spec)
+                                .mapOption("TRUSTD_S3_BUCKET", TrustifySpec.S3StorageSpec::bucket)
+                                .mapOption("TRUSTD_S3_REGION", TrustifySpec.S3StorageSpec::region)
+                                .mapOption("TRUSTD_S3_ACCESS_KEY", TrustifySpec.S3StorageSpec::accessKey)
+                                .mapOption("TRUSTD_S3_SECRET_KEY", TrustifySpec.S3StorageSpec::secretKey)
+                                .getEnvVars()
+                        )
+                        .orElseGet(ArrayList::new);
+                envVars.addAll(s3EnvVars);
+            }
+        }
 
         allEnvVars.addAll(envVars);
     }

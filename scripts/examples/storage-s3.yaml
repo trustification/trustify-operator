@@ -1,0 +1,12 @@
+apiVersion: "org.trustify/v1alpha1"
+kind: "Trustify"
+metadata:
+  name: myapp
+spec:
+  storage:
+    type: S3
+    s3:
+      region: myregion
+      bucket: mybucket
+      secretKey: mysecretkey
+      accessKey: myaccesskey
