@@ -122,20 +122,32 @@ public class TrustifyDistConfigurator {
     }
 
     private void configureStorage() {
-        TrustifySpec.StorageSpec storageSpec = cr.getSpec().storageSpec();
-        TrustifySpec.StorageStrategyType storageStrategyType = Objects.nonNull(storageSpec) && Objects.nonNull(storageSpec.type()) ? storageSpec.type() : TrustifySpec.StorageStrategyType.FILESYSTEM;
+        List<EnvVar> envVars = new ArrayList<>();
 
-        List<EnvVar> envVars = optionMapper(storageSpec)
-                .mapOption("TRUSTD_STORAGE_COMPRESSION", spec -> Objects.nonNull(spec) && Objects.nonNull(spec.compression()) ? spec.compression().getValue() : null)
-                .mapOption("TRUSTD_STORAGE_STRATEGY", spec -> storageStrategyType.getValue())
-                .getEnvVars();
+        TrustifySpec.StorageSpec storageSpec = Optional.ofNullable(cr.getSpec().storageSpec())
+                .orElse(new TrustifySpec.StorageSpec(null, null, null, null));
+
+        // Storage type
+        TrustifySpec.StorageStrategyType storageStrategyType = Objects.nonNull(storageSpec.type()) ? storageSpec.type() : TrustifySpec.StorageStrategyType.FILESYSTEM;
+        envVars.add(new EnvVarBuilder()
+                .withName("TRUSTD_STORAGE_STRATEGY")
+                .withValue(storageStrategyType.getValue())
+                .build()
+        );
+
+        // Other config
+        envVars.addAll(optionMapper(storageSpec)
+                .mapOption("TRUSTD_STORAGE_COMPRESSION", spec -> Objects.nonNull(spec.compression()) ? spec.compression().getValue() : null)
+                .getEnvVars()
+        );
 
         switch (storageStrategyType) {
             case FILESYSTEM -> {
-                List<EnvVar> filesystemEnvVars = optionMapper(storageSpec)
-                        .mapOption("TRUSTD_STORAGE_FS_PATH", spec -> "/opt/trustify/storage")
-                        .getEnvVars();
-                envVars.addAll(filesystemEnvVars);
+                envVars.add(new EnvVarBuilder()
+                        .withName("TRUSTD_STORAGE_FS_PATH")
+                        .withValue("/opt/trustify/storage")
+                        .build()
+                );
 
                 var volume = new VolumeBuilder()
                         .withName("trustify-pvol")
@@ -154,17 +166,13 @@ public class TrustifyDistConfigurator {
                 allVolumeMounts.add(volumeMount);
             }
             case S3 -> {
-                List<EnvVar> s3EnvVars = Optional.ofNullable(storageSpec)
-                        .flatMap(spec -> Optional.ofNullable(spec.s3StorageSpec()))
-                        .map(spec -> optionMapper(spec)
-                                .mapOption("TRUSTD_S3_BUCKET", TrustifySpec.S3StorageSpec::bucket)
-                                .mapOption("TRUSTD_S3_REGION", TrustifySpec.S3StorageSpec::region)
-                                .mapOption("TRUSTD_S3_ACCESS_KEY", TrustifySpec.S3StorageSpec::accessKey)
-                                .mapOption("TRUSTD_S3_SECRET_KEY", TrustifySpec.S3StorageSpec::secretKey)
-                                .getEnvVars()
-                        )
-                        .orElseGet(ArrayList::new);
-                envVars.addAll(s3EnvVars);
+                envVars.addAll(optionMapper(storageSpec.s3StorageSpec())
+                        .mapOption("TRUSTD_S3_BUCKET", TrustifySpec.S3StorageSpec::bucket)
+                        .mapOption("TRUSTD_S3_REGION", TrustifySpec.S3StorageSpec::region)
+                        .mapOption("TRUSTD_S3_ACCESS_KEY", TrustifySpec.S3StorageSpec::accessKey)
+                        .mapOption("TRUSTD_S3_SECRET_KEY", TrustifySpec.S3StorageSpec::secretKey)
+                        .getEnvVars()
+                );
             }
         }
 
