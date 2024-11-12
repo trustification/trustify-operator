@@ -12,11 +12,9 @@ import org.jboss.logging.Logger;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifyStatusCondition;
 import org.trustify.operator.cdrs.v2alpha1.db.*;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerDeployment;
+import org.trustify.operator.cdrs.v2alpha1.server.*;
 import org.trustify.operator.cdrs.v2alpha1.ui.UIDeployment;
 import org.trustify.operator.cdrs.v2alpha1.ui.UIIngress;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerStoragePersistentVolumeClaim;
 import org.trustify.operator.cdrs.v2alpha1.ui.UIService;
 
 import java.time.Duration;
@@ -53,31 +51,29 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
 
                 @Dependent(
                         name = "server-pvc",
-                        type = ServerStoragePersistentVolumeClaim.class
+                        type = ServerStoragePersistentVolumeClaim.class,
+                        activationCondition = ServerStoragePersistentVolumeClaimActivationCondition.class
                 ),
                 @Dependent(
                         name = "server-deployment",
                         type = ServerDeployment.class,
-                        readyPostcondition = ServerDeployment.class,
-                        useEventSourceWithName = TrustifyReconciler.DEPLOYMENT_EVENT_SOURCE
+                        readyPostcondition = ServerDeployment.class
                 ),
                 @Dependent(
                         name = "server-service",
-                        type = ServerService.class,
-                        useEventSourceWithName = TrustifyReconciler.SERVICE_EVENT_SOURCE
+                        type = ServerService.class
                 ),
 
                 @Dependent(
                         name = "ui-deployment",
                         type = UIDeployment.class,
-                        readyPostcondition = UIDeployment.class,
-                        useEventSourceWithName = TrustifyReconciler.DEPLOYMENT_EVENT_SOURCE
+                        readyPostcondition = UIDeployment.class
                 ),
                 @Dependent(
                         name = "ui-service",
-                        type = UIService.class,
-                        useEventSourceWithName = TrustifyReconciler.SERVICE_EVENT_SOURCE
+                        type = UIService.class
                 ),
+
                 @Dependent(
                         name = "ui-ingress",
                         type = UIIngress.class,
