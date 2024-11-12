@@ -40,6 +40,7 @@ public class Constants {
     public static final String UI_DEPLOYMENT_SUFFIX = "-" + TRUSTI_UI_NAME + "-deployment";
     public static final String UI_SERVICE_SUFFIX = "-" + TRUSTI_UI_NAME + "-service";
 
+    public static final String SERVER_PVC_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-pvc";
     public static final String SERVER_DEPLOYMENT_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-deployment";
     public static final String SERVER_SERVICE_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-service";
 
@@ -52,7 +53,7 @@ public class Constants {
     public static final String DB_NAME = "trustify";
     public static final Integer DB_PORT= 5432;
 
-    public static final String POSTGRESQL_PVC_SIZE = "10G";
+    public static final String DEFAULT_PVC_SIZE = "10G";
 
     public static final String CERTIFICATES_FOLDER = "/mnt/certificates";
     public static final String WORKSPACES_FOLDER = "/mnt/workspace";

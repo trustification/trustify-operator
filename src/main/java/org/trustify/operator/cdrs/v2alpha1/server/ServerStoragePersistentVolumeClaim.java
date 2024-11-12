@@ -65,7 +65,7 @@ public class ServerStoragePersistentVolumeClaim extends CRUDKubernetesDependentR
     }
 
     public static String getPersistentVolumeClaimName(Trustify cr) {
-        return cr.getMetadata().getName() + Constants.DB_PVC_SUFFIX;
+        return cr.getMetadata().getName() + Constants.SERVER_PVC_SUFFIX;
     }
 
 }
