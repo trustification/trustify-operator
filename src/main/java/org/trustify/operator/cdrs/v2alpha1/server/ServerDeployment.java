@@ -150,7 +150,6 @@ public class ServerDeployment extends CRUDKubernetesDependentResource<Deployment
                                         .withCommand(
                                                 "/usr/local/bin/trustd",
                                                 "api",
-                                                "--sample-data",
                                                 "--infrastructure-enabled",
                                                 "--infrastructure-bind=0.0.0.0:" + Constants.HTTP_INFRAESTRUCTURE_PORT
                                         )
