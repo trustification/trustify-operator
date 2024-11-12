@@ -15,6 +15,7 @@ import org.trustify.operator.cdrs.v2alpha1.db.*;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerDeployment;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerIngress;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
+import org.trustify.operator.cdrs.v2alpha1.server.ServerStoragePersistentVolumeClaim;
 
 import java.time.Duration;
 import java.util.Map;
@@ -50,6 +51,10 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
                 ),
 
                 @Dependent(
+                        name = "server-pvc",
+                        type = ServerStoragePersistentVolumeClaim.class
+                ),
+                @Dependent(
                         name = "server-deployment",
                         type = ServerDeployment.class,
 //                        dependsOn = {"db-service"},
@@ -75,6 +80,7 @@ public class TrustifyReconciler implements Reconciler<Trustify>, ContextInitiali
 
     private static final Logger logger = Logger.getLogger(TrustifyReconciler.class);
 
+    public static final String PVC_EVENT_SOURCE = "pcvSource";
     public static final String DEPLOYMENT_EVENT_SOURCE = "deploymentSource";
     public static final String SERVICE_EVENT_SOURCE = "serviceSource";
 
@@ -122,13 +128,16 @@ public class TrustifyReconciler implements Reconciler<Trustify>, ContextInitiali
 
     @Override
     public Map<String, EventSource> prepareEventSources(EventSourceContext<Trustify> context) {
+        var pcvInformerConfiguration = InformerConfiguration.from(PersistentVolumeClaim.class, context).build();
         var deploymentInformerConfiguration = InformerConfiguration.from(Deployment.class, context).build();
         var serviceInformerConfiguration = InformerConfiguration.from(Service.class, context).build();
 
+        var pcvInformerEventSource = new InformerEventSource<>(pcvInformerConfiguration, context);
         var deploymentInformerEventSource = new InformerEventSource<>(deploymentInformerConfiguration, context);
         var serviceInformerEventSource = new InformerEventSource<>(serviceInformerConfiguration, context);
 
         return Map.of(
+                PVC_EVENT_SOURCE, pcvInformerEventSource,
                 DEPLOYMENT_EVENT_SOURCE, deploymentInformerEventSource,
                 SERVICE_EVENT_SOURCE, serviceInformerEventSource
         );
