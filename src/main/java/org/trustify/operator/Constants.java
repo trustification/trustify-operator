@@ -46,7 +46,7 @@ public class Constants {
     public static final String DB_NAME = "trustify";
     public static final Integer DB_PORT= 5432;
 
-    public static final String DEFAULT_PVC_SIZE = "10Gi";
+    public static final String DEFAULT_PVC_SIZE = "10G";
 
     public static final String CERTIFICATES_FOLDER = "/mnt/certificates";
     public static final String WORKSPACES_FOLDER = "/mnt/workspace";
