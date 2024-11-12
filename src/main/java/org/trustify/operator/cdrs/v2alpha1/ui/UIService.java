@@ -7,7 +7,6 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 import jakarta.enterprise.context.ApplicationScoped;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
-import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
 import org.trustify.operator.utils.CRDUtils;
 
 import java.util.Map;
