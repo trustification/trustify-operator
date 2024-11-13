@@ -36,6 +36,10 @@ public record TrustifySpec(
         @JsonPropertyDescription("In this section you can configure Oidc settings.")
         OidcSpec oidcSpec,
 
+        @JsonProperty("storage")
+        @JsonPropertyDescription("In this section you can configure Storage settings.")
+        StorageSpec storageSpec,
+
         @JsonProperty("serverResourceLimits")
         @JsonPropertyDescription("In this section you can configure resource limits settings for the Server.")
         ResourcesLimitSpec serverResourceLimitSpec
@@ -43,6 +47,7 @@ public record TrustifySpec(
 
     public TrustifySpec() {
         this(
+                null,
                 null,
                 null,
                 null,
@@ -96,15 +101,75 @@ public record TrustifySpec(
 
     public record OidcSpec(
             @JsonPropertyDescription("Enable Oidc Auth.")
-            String enabled,
+            boolean enabled,
             @JsonPropertyDescription("Oidc server url.")
             String serverUrl,
-            @JsonPropertyDescription("Oidc client id.")
-            String clientId,
+            @JsonPropertyDescription("Oidc client id for the UI.")
+            String uiClientId,
+            @JsonPropertyDescription("Oidc client id for the Server.")
+            String serverClientId,
 
             @JsonProperty("db")
             @JsonPropertyDescription("In this section you can find all properties related to connect to a database.")
             DatabaseSpec databaseSpec
+    ) {
+    }
+
+    public enum StorageStrategyType {
+        FILESYSTEM("fs"),
+        S3("s3");
+        private final String value;
+
+        StorageStrategyType(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+    }
+
+    public enum StorageCompressionType {
+        NONE("none"),
+        ZSTD("zstd");
+        private final String value;
+
+        StorageCompressionType(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+    }
+
+    public record StorageSpec(
+            @JsonPropertyDescription("Storage compression.")
+            StorageCompressionType compression,
+            @JsonPropertyDescription("Storage type.")
+            StorageStrategyType type,
+            @JsonProperty("filesystem")
+            FilesystemStorageSpec filesystemStorageSpec,
+            @JsonProperty("s3")
+            S3StorageSpec s3StorageSpec
+    ) {
+    }
+
+    public record FilesystemStorageSpec(
+            @JsonPropertyDescription("Size of the PVC to create.")
+            String pvcSize
+    ) {
+    }
+
+    public record S3StorageSpec(
+            @JsonPropertyDescription("Region name.")
+            String region,
+            @JsonPropertyDescription("Bucket name.")
+            String bucket,
+            @JsonPropertyDescription("Access key.")
+            String accessKey,
+            @JsonPropertyDescription("Secret key.")
+            String secretKey
     ) {
     }
 

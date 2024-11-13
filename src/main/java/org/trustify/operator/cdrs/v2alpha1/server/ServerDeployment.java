@@ -130,6 +130,18 @@ public class ServerDeployment extends CRUDKubernetesDependentResource<Deployment
                                 .withTerminationGracePeriodSeconds(70L)
                                 .withImagePullSecrets(cr.getSpec().imagePullSecrets())
 //                                .withServiceAccountName(Constants.TRUSTI_NAME)
+                                .withInitContainers(new ContainerBuilder()
+                                        .withName("migrate")
+                                        .withImage(image)
+                                        .withImagePullPolicy(imagePullPolicy)
+                                        .withEnv(envVars)
+                                        .withCommand(
+                                                "/usr/local/bin/trustd",
+                                                "db",
+                                                "migrate"
+                                        )
+                                        .build()
+                                )
                                 .withContainers(new ContainerBuilder()
                                         .withName(Constants.TRUSTI_SERVER_NAME)
                                         .withImage(image)
@@ -138,7 +150,7 @@ public class ServerDeployment extends CRUDKubernetesDependentResource<Deployment
                                         .withCommand(
                                                 "/usr/local/bin/trustd",
                                                 "api",
-                                                "--devmode",
+                                                "--sample-data",
                                                 "--infrastructure-enabled",
                                                 "--infrastructure-bind=0.0.0.0:" + Constants.HTTP_INFRAESTRUCTURE_PORT
                                         )

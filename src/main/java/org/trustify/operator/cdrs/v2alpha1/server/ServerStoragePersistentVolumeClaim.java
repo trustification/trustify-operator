@@ -8,9 +8,11 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 import jakarta.enterprise.context.ApplicationScoped;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
+import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
 import org.trustify.operator.utils.CRDUtils;
 
 import java.util.Map;
+import java.util.Optional;
 
 @KubernetesDependent(labelSelector = ServerStoragePersistentVolumeClaim.LABEL_SELECTOR, resourceDiscriminator = ServerStoragePersistentVolumeClaimDiscriminator.class)
 @ApplicationScoped
@@ -33,7 +35,10 @@ public class ServerStoragePersistentVolumeClaim extends CRUDKubernetesDependentR
         final var labels = (Map<String, String>) context.managedDependentResourceContext()
                 .getMandatory(Constants.CONTEXT_LABELS_KEY, Map.class);
 
-        String pvcStorageSize = "10Gi";
+        String pvcStorageSize = Optional.ofNullable(cr.getSpec().storageSpec())
+                .flatMap(storageSpec -> Optional.ofNullable(storageSpec.filesystemStorageSpec()))
+                .map(TrustifySpec.FilesystemStorageSpec::pvcSize)
+                .orElse(Constants.DEFAULT_PVC_SIZE);
 
         return new PersistentVolumeClaimBuilder()
                 .withNewMetadata()
@@ -65,7 +70,7 @@ public class ServerStoragePersistentVolumeClaim extends CRUDKubernetesDependentR
     }
 
     public static String getPersistentVolumeClaimName(Trustify cr) {
-        return cr.getMetadata().getName() + Constants.DB_PVC_SUFFIX;
+        return cr.getMetadata().getName() + Constants.SERVER_PVC_SUFFIX;
     }
 
 }

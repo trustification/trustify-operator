@@ -5,6 +5,7 @@ set -x
 set -o pipefail
 
 NAMESPACE="${NAMESPACE:-trustify}"
+APP_NAME="${APP_NAME:-myapp}"
 OPERATOR_BUNDLE_IMAGE="${OPERATOR_BUNDLE_IMAGE:-ghcr.io/trustification/trustify-operator-bundle:latest}"
 TRUSTIFY_CR="${TRUSTIFY_CR:-}"
 TIMEOUT="${TIMEOUT:-15m}"
@@ -21,7 +22,15 @@ fi
 
 run_bundle() {
   kubectl auth can-i create namespace --all-namespaces
-  kubectl create namespace ${NAMESPACE} || true
+
+  # delete the ns if it exists, effectively undeploying the current
+  # Trustify instance. This kinda defeats the purpose of operators,
+  # obviously, but I'm not familiar enough with the operator-sdk
+  # command to convince it to reinstall/upgrade the bundle -- run
+  # bundle-upgrade didn't work :(
+  kubectl delete namespace ${NAMESPACE} || true
+
+  kubectl create namespace ${NAMESPACE}
   operator-sdk run bundle "${OPERATOR_BUNDLE_IMAGE}" --namespace "${NAMESPACE}" --timeout "${TIMEOUT}" || (kubectl get Subscription --namespace "${NAMESPACE}" -o yaml && exit 1)
 
   # If on MacOS, need to install `brew install coreutils` to get `timeout`
@@ -47,40 +56,38 @@ install_trustify() {
 kind: Trustify
 apiVersion: org.trustify/v1alpha1
 metadata:
-  name: myapp
+  name: ${APP_NAME}
 spec: {}
 EOF
     fi
 
   # Want to see in github logs what we just created
-  kubectl get --namespace "${NAMESPACE}" -o yaml trustifies.org.trustify/myapp
+  kubectl get --namespace "${NAMESPACE}" -o yaml trustifies.org.trustify/${APP_NAME}
 
   # Wait for reconcile to finish
     kubectl wait \
       --namespace ${NAMESPACE} \
       --for=condition=Successful \
       --timeout=600s \
-      trustifies.org.trustify/myapp \
+      trustifies.org.trustify/${APP_NAME} \
     || kubectl get \
       --namespace ${NAMESPACE} \
       -o yaml \
-      trustifies.org.trustify/myapp # Print trustify debug when timed out
+      trustifies.org.trustify/${APP_NAME} # Print trustify debug when timed out
 
   # Now wait for all the trustify deployments
   kubectl wait \
     --namespace ${NAMESPACE} \
-    --selector="app.kubernetes.io/part-of=myapp" \
+    --selector="app.kubernetes.io/part-of=${APP_NAME}" \
     --for=condition=Available \
     --timeout=600s \
     deployments.apps \
   || kubectl get \
     --namespace ${NAMESPACE} \
-    --selector="app.kubernetes.io/part-of=myapp" \
+    --selector="app.kubernetes.io/part-of=${APP_NAME}" \
     --field-selector=status.phase!=Running  \
     -o yaml \
     pods # Print not running trustify pods when timed out
-
-  kubectl get deployments.apps -n "${NAMESPACE}" -o yaml
 }
 
 # Available versions of OLM here https://github.com/operator-framework/operator-lifecycle-manager/releases

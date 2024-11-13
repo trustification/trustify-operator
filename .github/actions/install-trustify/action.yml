@@ -14,6 +14,10 @@ inputs:
     description: "JSON encoded Trustify Custom Resource (CR) string"
     required: false
     default: ""
+  app-name:
+    description: "Name of the Trustify instance (should match CR metadata if passed)"
+    required: false
+    default: "myapp"
 runs:
   using: "composite"
   steps:
@@ -33,12 +37,13 @@ runs:
           echo "operator-sdk is already installed...yay"
           exit 0
         fi
-        curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v1.35.0/operator-sdk_linux_amd64
+        curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v1.37.0/operator-sdk_linux_amd64
         sudo install -o root -g root -m 0755 operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
     - name: Install Trustify
       env:
         OPERATOR_BUNDLE_IMAGE: ${{ inputs.operator-bundle-image }}
         NAMESPACE: ${{ inputs.namespace }}
+        APP_NAME: ${{ inputs.app-name }}
         TRUSTIFY_CR: ${{ inputs.trustify-cr }}
       run: |
         make install-trustify

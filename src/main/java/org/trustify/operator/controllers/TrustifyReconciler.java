@@ -12,10 +12,9 @@ import org.jboss.logging.Logger;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifyStatusCondition;
 import org.trustify.operator.cdrs.v2alpha1.db.*;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.*;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerDeployment;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerIngress;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.KeycloakDBPersistentVolumeClaim;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.KeycloakDBPersistentVolumeClaimActivationCondition;
+import org.trustify.operator.cdrs.v2alpha1.server.*;
 
 import java.time.Duration;
 import java.util.Map;
@@ -33,78 +32,76 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
                         activationCondition = KeycloakDBPersistentVolumeClaimActivationCondition.class,
                         useEventSourceWithName = TrustifyReconciler.PVC_EVENT_SOURCE
                 ),
-//                @Dependent(
-//                        name = "oidc-db-secret",
-//                        type = KeycloakDBSecret.class,
-//                        activationCondition = KeycloakDBSecretActivationCondition.class
-//                ),
-//                @Dependent(
-//                        name = "oidc-db-deployment",
-//                        type = KeycloakDBDeployment.class,
-//                        dependsOn = {"db-pvc", "db-secret"},
-//                        readyPostcondition = KeycloakDBDeployment.class,
-//                        activationCondition = KeycloakDBDeploymentActivationCondition.class
-//                ),
-//                @Dependent(
-//                        name = "oidc-db-service",
-//                        type = KeycloakDBService.class,
-//                        dependsOn = {"oidc-db-deployment"},
-//                        activationCondition = KeycloakDBServiceActivationCondition.class
-//                ),
+                @Dependent(
+                        name = "oidc-db-secret",
+                        type = KeycloakDBSecret.class,
+                        activationCondition = KeycloakDBSecretActivationCondition.class
+                ),
+                @Dependent(
+                        name = "oidc-db-deployment",
+                        type = KeycloakDBDeployment.class,
+                        dependsOn = {"db-pvc", "db-secret"},
+                        readyPostcondition = KeycloakDBDeployment.class,
+                        activationCondition = KeycloakDBDeploymentActivationCondition.class
+                ),
+                @Dependent(
+                        name = "oidc-db-service",
+                        type = KeycloakDBService.class,
+                        dependsOn = {"oidc-db-deployment"},
+                        activationCondition = KeycloakDBServiceActivationCondition.class
+                ),
 
-                // Trustify
                 @Dependent(
                         name = "db-pvc",
                         type = DBPersistentVolumeClaim.class,
-                        activationCondition = DBPersistentVolumeClaimActivationCondition.class,
-                        useEventSourceWithName = TrustifyReconciler.PVC_EVENT_SOURCE
+                        activationCondition = DBPersistentVolumeClaimActivationCondition.class
                 ),
-//                @Dependent(
-//                        name = "db-secret",
-//                        type = DBSecret.class,
-//                        activationCondition = DBSecretActivationCondition.class
-//                ),
-//                @Dependent(
-//                        name = "db-deployment",
-//                        type = DBDeployment.class,
-//                        dependsOn = {"db-pvc", "db-secret"},
-//                        readyPostcondition = DBDeployment.class,
-//                        activationCondition = DBDeploymentActivationCondition.class
-//                ),
-//                @Dependent(
-//                        name = "db-service",
-//                        type = DBService.class,
-//                        dependsOn = {"db-deployment"},
-//                        activationCondition = DBServiceActivationCondition.class
-//                ),
-//
-//                @Dependent(
-//                        name = "server-deployment",
-//                        type = ServerDeployment.class,
-////                        dependsOn = {"db-service"},
-//                        readyPostcondition = ServerDeployment.class,
-//                        useEventSourceWithName = "server-deployment"
-//                ),
-//                @Dependent(
-//                        name = "server-service",
-//                        type = ServerService.class,
-//                        dependsOn = {"server-deployment"},
-//                        useEventSourceWithName = "server-service"
-//                ),
-//
-//                @Dependent(
-//                        name = "ingress",
-//                        type = ServerIngress.class,
-//                        dependsOn = {"server-service"},
-//                        readyPostcondition = ServerIngress.class
-//                )
+                @Dependent(
+                        name = "db-secret",
+                        type = DBSecret.class,
+                        activationCondition = DBSecretActivationCondition.class
+                ),
+                @Dependent(
+                        name = "db-deployment",
+                        type = DBDeployment.class,
+                        dependsOn = {"db-pvc", "db-secret"},
+                        readyPostcondition = DBDeployment.class,
+                        activationCondition = DBDeploymentActivationCondition.class
+                ),
+                @Dependent(
+                        name = "db-service",
+                        type = DBService.class,
+                        dependsOn = {"db-deployment"},
+                        activationCondition = DBServiceActivationCondition.class
+                ),
+
+                @Dependent(
+                        name = "server-deployment",
+                        type = ServerDeployment.class,
+//                        dependsOn = {"db-service"},
+                        readyPostcondition = ServerDeployment.class,
+                        useEventSourceWithName = "server-deployment"
+                ),
+                @Dependent(
+                        name = "server-service",
+                        type = ServerService.class,
+                        dependsOn = {"server-deployment"},
+                        useEventSourceWithName = "server-service"
+                ),
+
+                @Dependent(
+                        name = "ingress",
+                        type = ServerIngress.class,
+                        dependsOn = {"server-service"},
+                        readyPostcondition = ServerIngress.class
+                )
         }
 )
 public class TrustifyReconciler implements Reconciler<Trustify>, ContextInitializer<Trustify>, EventSourceInitializer<Trustify> {
 
     private static final Logger logger = Logger.getLogger(TrustifyReconciler.class);
 
-    public static final String PVC_EVENT_SOURCE = "pvcSource";
+    public static final String PVC_EVENT_SOURCE = "pcvSource";
     public static final String DEPLOYMENT_EVENT_SOURCE = "deploymentSource";
     public static final String SERVICE_EVENT_SOURCE = "serviceSource";
 
@@ -152,16 +149,16 @@ public class TrustifyReconciler implements Reconciler<Trustify>, ContextInitiali
 
     @Override
     public Map<String, EventSource> prepareEventSources(EventSourceContext<Trustify> context) {
-        var pvcInformerConfiguration = InformerConfiguration.from(PersistentVolumeClaim.class, context).build();
+        var pcvInformerConfiguration = InformerConfiguration.from(PersistentVolumeClaim.class, context).build();
         var deploymentInformerConfiguration = InformerConfiguration.from(Deployment.class, context).build();
         var serviceInformerConfiguration = InformerConfiguration.from(Service.class, context).build();
 
-        var pvcInformerEventSource = new InformerEventSource<>(pvcInformerConfiguration, context);
+        var pcvInformerEventSource = new InformerEventSource<>(pcvInformerConfiguration, context);
         var deploymentInformerEventSource = new InformerEventSource<>(deploymentInformerConfiguration, context);
         var serviceInformerEventSource = new InformerEventSource<>(serviceInformerConfiguration, context);
 
         return Map.of(
-                PVC_EVENT_SOURCE, pvcInformerEventSource,
+                PVC_EVENT_SOURCE, pcvInformerEventSource,
                 DEPLOYMENT_EVENT_SOURCE, deploymentInformerEventSource,
                 SERVICE_EVENT_SOURCE, serviceInformerEventSource
         );

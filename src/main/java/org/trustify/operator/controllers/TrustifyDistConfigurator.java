@@ -122,33 +122,79 @@ public class TrustifyDistConfigurator {
     }
 
     private void configureStorage() {
-        List<EnvVar> envVars = optionMapper(cr.getSpec())
-                .mapOption("TRUSTD_STORAGE_FS_PATH", spec -> "/opt/trustify/storage")
-                .getEnvVars();
+        List<EnvVar> envVars = new ArrayList<>();
 
-        var volume = new VolumeBuilder()
-                .withName("trustify-pvol")
-                .withPersistentVolumeClaim(new PersistentVolumeClaimVolumeSourceBuilder()
-                        .withClaimName(ServerStoragePersistentVolumeClaim.getPersistentVolumeClaimName(cr))
+        TrustifySpec.StorageSpec storageSpec = Optional.ofNullable(cr.getSpec().storageSpec())
+                .orElse(new TrustifySpec.StorageSpec(null, null, null, null));
+
+        // Storage type
+        TrustifySpec.StorageStrategyType storageStrategyType = Objects.nonNull(storageSpec.type()) ? storageSpec.type() : TrustifySpec.StorageStrategyType.FILESYSTEM;
+        envVars.add(new EnvVarBuilder()
+                .withName("TRUSTD_STORAGE_STRATEGY")
+                .withValue(storageStrategyType.getValue())
+                .build()
+        );
+
+        // Other config
+        envVars.addAll(optionMapper(storageSpec)
+                .mapOption("TRUSTD_STORAGE_COMPRESSION", spec -> Objects.nonNull(spec.compression()) ? spec.compression().getValue() : null)
+                .getEnvVars()
+        );
+
+        switch (storageStrategyType) {
+            case FILESYSTEM -> {
+                envVars.add(new EnvVarBuilder()
+                        .withName("TRUSTD_STORAGE_FS_PATH")
+                        .withValue("/opt/trustify/storage")
                         .build()
-                )
-                .build();
+                );
 
-        var volumeMount = new VolumeMountBuilder()
-                .withName(volume.getName())
-                .withMountPath("/opt/trustify")
-                .build();
+                var volume = new VolumeBuilder()
+                        .withName("trustify-pvol")
+                        .withPersistentVolumeClaim(new PersistentVolumeClaimVolumeSourceBuilder()
+                                .withClaimName(ServerStoragePersistentVolumeClaim.getPersistentVolumeClaimName(cr))
+                                .build()
+                        )
+                        .build();
 
-        allVolumes.add(volume);
-        allVolumeMounts.add(volumeMount);
+                var volumeMount = new VolumeMountBuilder()
+                        .withName(volume.getName())
+                        .withMountPath("/opt/trustify")
+                        .build();
+
+                allVolumes.add(volume);
+                allVolumeMounts.add(volumeMount);
+            }
+            case S3 -> {
+                envVars.addAll(optionMapper(storageSpec.s3StorageSpec())
+                        .mapOption("TRUSTD_S3_BUCKET", TrustifySpec.S3StorageSpec::bucket)
+                        .mapOption("TRUSTD_S3_REGION", TrustifySpec.S3StorageSpec::region)
+                        .mapOption("TRUSTD_S3_ACCESS_KEY", TrustifySpec.S3StorageSpec::accessKey)
+                        .mapOption("TRUSTD_S3_SECRET_KEY", TrustifySpec.S3StorageSpec::secretKey)
+                        .getEnvVars()
+                );
+            }
+        }
 
         allEnvVars.addAll(envVars);
     }
 
     private void configureOidc() {
-        List<EnvVar> envVars = optionMapper(cr.getSpec())
-                .mapOption("AUTH_DISABLED", spec -> true)
-                .getEnvVars();
+        List<EnvVar> envVars = Optional.ofNullable(cr.getSpec().oidcSpec())
+                .map(oidcSpec -> optionMapper(oidcSpec)
+                        .mapOption("AUTH_DISABLED", spec -> !spec.enabled())
+                        .mapOption("AUTHENTICATOR_OIDC_ISSUER_URL", TrustifySpec.OidcSpec::serverUrl)
+                        .mapOption("AUTHENTICATOR_OIDC_CLIENT_IDS", TrustifySpec.OidcSpec::serverClientId)
+                        .mapOption("UI_ISSUER_URL", TrustifySpec.OidcSpec::serverUrl)
+                        .mapOption("UI_CLIENT_ID", TrustifySpec.OidcSpec::uiClientId)
+                        .getEnvVars()
+                )
+                .orElseGet(() -> List.of(new EnvVarBuilder()
+                        .withName("AUTH_DISABLED")
+                        .withValue(Boolean.TRUE.toString())
+                        .build())
+                );
+
         allEnvVars.addAll(envVars);
     }
 

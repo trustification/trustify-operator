@@ -44,11 +44,12 @@ public class Constants {
     public static final String OIDC_DB_DEPLOYMENT_SUFFIX = "-" + OIDC_DB_NAME + "-deployment";
     public static final String OIDC_DB_SERVICE_SUFFIX = "-" + OIDC_DB_NAME + "-service";
 
+    public static final String SERVER_PVC_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-pvc";
     public static final String SERVER_DEPLOYMENT_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-deployment";
     public static final String SERVER_SERVICE_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-service";
 
 
-    public static final String INGRESS_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-ingress";
+    public static final String INGRESS_SUFFIX = "-" + TRUSTI_NAME + "-ingress";
 
     //
     public static final String DB_SECRET_USERNAME = "username";
@@ -56,7 +57,7 @@ public class Constants {
     public static final String DB_NAME = "database";
     public static final Integer DB_PORT= 5432;
 
-    public static final String POSTGRESQL_PVC_SIZE = "10G";
+    public static final String DEFAULT_PVC_SIZE = "10G";
 
     public static final String CERTIFICATES_FOLDER = "/mnt/certificates";
     public static final String WORKSPACES_FOLDER = "/mnt/workspace";
