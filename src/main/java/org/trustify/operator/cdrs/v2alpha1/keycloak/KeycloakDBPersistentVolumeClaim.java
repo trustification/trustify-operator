@@ -18,7 +18,7 @@ import java.util.Map;
 public class KeycloakDBPersistentVolumeClaim extends CRUDKubernetesDependentResource<PersistentVolumeClaim, Trustify>
         implements Creator<PersistentVolumeClaim, Trustify> {
 
-    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=oidc";
+    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=keycloak";
 
     public KeycloakDBPersistentVolumeClaim() {
         super(PersistentVolumeClaim.class);
@@ -35,14 +35,14 @@ public class KeycloakDBPersistentVolumeClaim extends CRUDKubernetesDependentReso
                 .getMandatory(Constants.CONTEXT_LABELS_KEY, Map.class);
 
         String pvcStorageSize = CRDUtils.getValueFromSubSpec(cr.getSpec().databaseSpec(), TrustifySpec.DatabaseSpec::pvcSize)
-                .orElse(Constants.POSTGRESQL_PVC_SIZE);
+                .orElse(Constants.DEFAULT_PVC_SIZE);
 
         return new PersistentVolumeClaimBuilder()
                 .withNewMetadata()
                 .withName(getPersistentVolumeClaimName(cr))
                 .withNamespace(cr.getMetadata().getNamespace())
                 .withLabels(labels)
-                .addToLabels("component", "oidc")
+                .addToLabels("component", "keycloak")
                 .withOwnerReferences(CRDUtils.getOwnerReference(cr))
                 .endMetadata()
                 .withSpec(new PersistentVolumeClaimSpecBuilder()

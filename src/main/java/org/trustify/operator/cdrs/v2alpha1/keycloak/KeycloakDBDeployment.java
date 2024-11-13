@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 public class KeycloakDBDeployment extends CRUDKubernetesDependentResource<Deployment, Trustify>
         implements Matcher<Deployment, Trustify>, Condition<Deployment, Trustify> {
 
-    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=oidc";
+    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=keycloak";
 
     @Inject
     Config config;
@@ -79,7 +79,7 @@ public class KeycloakDBDeployment extends CRUDKubernetesDependentResource<Deploy
                 .withName(getDeploymentName(cr))
                 .withNamespace(cr.getMetadata().getNamespace())
                 .withLabels(contextLabels)
-                .addToLabels("component", "oidc")
+                .addToLabels("component", "keycloak")
                 .addToLabels(Map.of(
                         "app.openshift.io/runtime", "postgresql"
                 ))
@@ -217,7 +217,7 @@ public class KeycloakDBDeployment extends CRUDKubernetesDependentResource<Deploy
     }
 
     public static String getDeploymentName(Trustify cr) {
-        return cr.getMetadata().getName() + Constants.DB_DEPLOYMENT_SUFFIX;
+        return cr.getMetadata().getName() + Constants.OIDC_DB_DEPLOYMENT_SUFFIX;
     }
 
     public static SecretKeySelector getUsernameSecretKeySelector(Trustify cr) {

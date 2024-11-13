@@ -5,6 +5,7 @@ import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.processing.dependent.Creator;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
+import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
@@ -12,10 +13,12 @@ import org.trustify.operator.cdrs.v2alpha1.db.DBSecret;
 import org.trustify.operator.utils.CRDUtils;
 
 import java.util.Map;
-import java.util.Random;
 
+@KubernetesDependent(labelSelector = KeycloakDBSecret.LABEL_SELECTOR, resourceDiscriminator = KeycloakDBSecretDiscriminator.class)
 @ApplicationScoped
 public class KeycloakDBSecret extends CRUDKubernetesDependentResource<Secret, Trustify> implements Creator<Secret, Trustify> {
+
+    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=keycloak";
 
     public KeycloakDBSecret() {
         super(Secret.class);
@@ -42,6 +45,7 @@ public class KeycloakDBSecret extends CRUDKubernetesDependentResource<Secret, Tr
                 .withName(getSecretName(cr))
                 .withNamespace(cr.getMetadata().getNamespace())
                 .withLabels(labels)
+                .addToLabels("component", "keycloak")
                 .withOwnerReferences(CRDUtils.getOwnerReference(cr))
                 .endMetadata()
                 .addToStringData(Constants.DB_SECRET_USERNAME, generateRandomString(10))

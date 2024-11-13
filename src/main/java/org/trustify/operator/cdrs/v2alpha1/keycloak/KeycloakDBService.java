@@ -18,7 +18,7 @@ import java.util.Map;
 @ApplicationScoped
 public class KeycloakDBService extends CRUDKubernetesDependentResource<Service, Trustify> {
 
-    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=db";
+    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=keycloak";
 
     public KeycloakDBService() {
         super(Service.class);
@@ -39,7 +39,7 @@ public class KeycloakDBService extends CRUDKubernetesDependentResource<Service, 
                 .withName(getServiceName(cr))
                 .withNamespace(cr.getMetadata().getNamespace())
                 .withLabels(labels)
-                .addToLabels("component", "db")
+                .addToLabels("component", "keycloak")
                 .withOwnerReferences(CRDUtils.getOwnerReference(cr))
                 .endMetadata()
                 .withSpec(getServiceSpec(cr))
@@ -58,7 +58,7 @@ public class KeycloakDBService extends CRUDKubernetesDependentResource<Service, 
     }
 
     public static String getServiceName(Trustify cr) {
-        return cr.getMetadata().getName() + Constants.DB_SERVICE_SUFFIX;
+        return cr.getMetadata().getName() + Constants.OIDC_DB_SERVICE_SUFFIX;
     }
 
 }
