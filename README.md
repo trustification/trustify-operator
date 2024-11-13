@@ -1,3 +1,31 @@
+# Quick Start - Helm Chart
+
+If you want to give a quick try of the operator without the whole glory of OLM you can deploy our Operator using Helm.
+
+- Start minikube:
+
+```shell
+minikube start --addons=ingress,dashboard
+```
+
+- Install the Helm Chart:
+
+```shell
+helm install myhelm helm/
+```
+
+- Create an instance of Trustify:
+
+```shell
+cat << EOF | kubectl apply -f -
+apiVersion: "org.trustify/v1alpha1"
+kind: "Trustify"
+metadata:
+  name: myapp
+spec: { }
+EOF
+```
+
 # Local development
 
 ## Minikube

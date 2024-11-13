@@ -21,13 +21,10 @@ quarkus:
     helm:
       enabled: true
   # https://quarkus.io/guides/deploying-to-kubernetes#environment-variables-from-keyvalue-pairs
-  openshift:
-    env:
-      vars:
-        related-image-trustify-server: ${related.image.server}
-        related-image-db: ${related.image.db}
-        related-image-importer: ${related.image.importer}
   kubernetes:
+    idempotent: "true"
+    prometheus:
+      generate-service-monitor: "false"
     env:
       vars:
         related-image-trustify-server: ${related.image.server}
