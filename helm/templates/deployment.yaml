@@ -43,7 +43,7 @@ spec:
           value: "quay.io/sclorg/postgresql-15-c9s:latest"
         - name: "QUARKUS_OPERATOR_SDK_CONTROLLERS_TRUSTIFY_NAMESPACES"
           value: {{ .Values.watchNamespaces }}
-        image: "ghcr.io/runner/trustify-operator:{{ .Chart.AppVersion }}"
+        image: "ghcr.io/trustification/trustify-operator:{{ include "app.tag" . }}"
         imagePullPolicy: "Always"
         livenessProbe:
           failureThreshold: 3
