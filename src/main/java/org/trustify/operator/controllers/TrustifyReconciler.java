@@ -9,11 +9,13 @@ import io.javaoperatorsdk.operator.api.reconciler.*;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.Dependent;
 import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 import io.javaoperatorsdk.operator.processing.event.source.informer.InformerEventSource;
+import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifyStatusCondition;
 import org.trustify.operator.cdrs.v2alpha1.db.*;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.*;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakService;
 import org.trustify.operator.cdrs.v2alpha1.server.*;
 
 import java.time.Duration;
@@ -101,6 +103,9 @@ public class TrustifyReconciler implements Reconciler<Trustify>, ContextInitiali
     public static final String SECRET_EVENT_SOURCE = "secretSource";
     public static final String DEPLOYMENT_EVENT_SOURCE = "deploymentSource";
     public static final String SERVICE_EVENT_SOURCE = "serviceSource";
+
+    @Inject
+    KeycloakService keycloakService;
 
     @Override
     public void initContext(Trustify cr, Context<Trustify> context) {
