@@ -52,7 +52,7 @@ public class KeycloakDBService extends CRUDKubernetesDependentResource<Service, 
                 .withPort(KeycloakDBDeployment.getDatabasePort(cr))
                 .withProtocol(Constants.SERVICE_PROTOCOL)
                 .endPort()
-                .withSelector(Constants.DB_SELECTOR_LABELS)
+                .withSelector(Constants.OIDC_DB_SELECTOR_LABELS)
                 .withType("ClusterIP")
                 .build();
     }

@@ -15,11 +15,16 @@ import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifyStatusCondition;
 import org.trustify.operator.cdrs.v2alpha1.db.*;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.*;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.models.Keycloak;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakService;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.utils.KeycloakUtils;
 import org.trustify.operator.cdrs.v2alpha1.server.*;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT_NAMESPACE;
 
@@ -95,7 +100,7 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
                 )
         }
 )
-public class TrustifyReconciler implements Reconciler<Trustify>, ContextInitializer<Trustify>, EventSourceInitializer<Trustify> {
+public class TrustifyReconciler implements Reconciler<Trustify>, Cleaner<Trustify>, ContextInitializer<Trustify>, EventSourceInitializer<Trustify> {
 
     private static final Logger logger = Logger.getLogger(TrustifyReconciler.class);
 
@@ -119,7 +124,50 @@ public class TrustifyReconciler implements Reconciler<Trustify>, ContextInitiali
     }
 
     @Override
-    public UpdateControl<Trustify> reconcile(Trustify cr, Context context) {
+    public UpdateControl<Trustify> reconcile(Trustify cr, Context<Trustify> context) {
+        Optional<UpdateControl<Trustify>> kcUpdateControl = createOrUpdateKeycloakResources(cr, context);
+        return kcUpdateControl.orElseGet(() -> createOrUpdateDependantResources(cr, context));
+    }
+
+    @Override
+    public DeleteControl cleanup(Trustify cr, Context<Trustify> context) {
+        keycloakService.cleanupDependentResources(cr);
+        return DeleteControl.defaultDelete();
+    }
+
+    private Optional<UpdateControl<Trustify>> createOrUpdateKeycloakResources(Trustify cr, Context<Trustify> context) {
+        boolean isKcRequired = KeycloakUtils.isKeycloakRequired(cr);
+        if (isKcRequired) {
+            boolean kcSubscriptionExists = keycloakService.subscriptionExists(cr);
+            if (!kcSubscriptionExists) {
+                logger.info("Installing Keycloak Operator");
+                keycloakService.createSubscription(cr);
+            }
+
+            if (!keycloakService.isSubscriptionReady(cr)) {
+                logger.info("Waiting for the Keycloak Operator to be ready");
+                return Optional.of(UpdateControl.<Trustify>noUpdate().rescheduleAfter(5, TimeUnit.SECONDS));
+            }
+
+            if (!keycloakService.crdExists()) {
+                logger.error("Could not find the Keycloak Custom Resource Definition");
+                return Optional.of(UpdateControl.<Trustify>noUpdate().rescheduleAfter(15, TimeUnit.SECONDS));
+            }
+
+            Keycloak kcInstance = keycloakService.getCurrentInstance(cr)
+                    .orElseGet(() -> keycloakService.initInstance(cr));
+            boolean isKcInstanceReady = kcInstance.getStatus() != null && kcInstance.getStatus()
+                    .getConditions().stream()
+                    .anyMatch(condition -> Objects.equals(condition.getType(), "Ready") && Objects.equals(condition.getStatus(), true));
+            if (!isKcInstanceReady) {
+                return Optional.of(UpdateControl.<Trustify>noUpdate().rescheduleAfter(5, TimeUnit.SECONDS));
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    private UpdateControl<Trustify> createOrUpdateDependantResources(Trustify cr, Context<Trustify> context) {
         return context.managedDependentResourceContext()
                 .getWorkflowReconcileResult()
                 .map(wrs -> {
