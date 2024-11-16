@@ -17,6 +17,7 @@ import org.trustify.operator.cdrs.v2alpha1.keycloak.models.KeycloakSpec;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.models.spec.DatabaseSpec;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.models.spec.HostnameSpec;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.models.spec.HttpSpec;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.models.spec.IngressSpec;
 
 import java.util.AbstractMap;
 import java.util.Objects;
@@ -130,15 +131,18 @@ public class KeycloakService {
         databaseSpec.setUsernameSecret(KeycloakDBSecret.getUsernameKeySelector(cr));
         databaseSpec.setPasswordSecret(KeycloakDBSecret.getPasswordKeySelector(cr));
 
-        // Host
-        spec.setHostnameSpec(new HostnameSpec());
-        HostnameSpec hostnameSpec = spec.getHostnameSpec();
-        hostnameSpec.setHostname("oeffrs.cunningham.aucunnin.lpi0.s1.devshift.org");
-
         // Https
         spec.setHttpSpec(new HttpSpec());
         HttpSpec httpSpec = spec.getHttpSpec();
         httpSpec.setTlsSecret(KeycloakHttpTlsSecret.getSecretName(cr));
+
+        // Ingress
+        spec.setIngressSpec(new IngressSpec());
+        spec.getIngressSpec().setIngressEnabled(false);
+
+        // Hostname
+        spec.setHostnameSpec(new HostnameSpec());
+        spec.getHostnameSpec().setStrict(false);
 
         return k8sClient.resource(keycloak)
                 .inNamespace(cr.getMetadata().getNamespace())
