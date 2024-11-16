@@ -207,6 +207,10 @@ public class UIDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
                 new EnvVarBuilder()
                         .withName("UI_INGRESS_PROXY_BODY_SIZE")
                         .withValue("50m")
+                        .build(),
+                new EnvVarBuilder()
+                        .withName("NODE_EXTRA_CA_CERTS")
+                        .withValue("/opt/app-root/src/ca.crt")
                         .build()
         );
     }
