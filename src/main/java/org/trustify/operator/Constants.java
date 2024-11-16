@@ -13,7 +13,8 @@ public class Constants {
     public static final String TRUSTI_SERVER_NAME = "trustify-server";
     public static final String TRUSTI_DB_NAME = "trustify-db";
 
-    public static final String OIDC_DB_NAME = "oidc-db";
+    public static final String KEYCLOAK_NAME = "keycloak";
+    public static final String KEYCLOAK_DB_NAME = KEYCLOAK_NAME + "-db";
 
     //
     public static final Map<String, String> DB_SELECTOR_LABELS = Map.of(
@@ -39,10 +40,10 @@ public class Constants {
     public static final String DB_DEPLOYMENT_SUFFIX = "-" + TRUSTI_DB_NAME + "-deployment";
     public static final String DB_SERVICE_SUFFIX = "-" + TRUSTI_DB_NAME + "-service";
 
-    public static final String OIDC_DB_PVC_SUFFIX = "-" + OIDC_DB_NAME + "-pvc";
-    public static final String OIDC_DB_SECRET_SUFFIX = "-" + OIDC_DB_NAME + "-secret";
-    public static final String OIDC_DB_DEPLOYMENT_SUFFIX = "-" + OIDC_DB_NAME + "-deployment";
-    public static final String OIDC_DB_SERVICE_SUFFIX = "-" + OIDC_DB_NAME + "-service";
+    public static final String OIDC_DB_PVC_SUFFIX = "-" + KEYCLOAK_DB_NAME + "-pvc";
+    public static final String OIDC_DB_SECRET_SUFFIX = "-" + KEYCLOAK_DB_NAME + "-secret";
+    public static final String OIDC_DB_DEPLOYMENT_SUFFIX = "-" + KEYCLOAK_DB_NAME + "-deployment";
+    public static final String OIDC_DB_SERVICE_SUFFIX = "-" + KEYCLOAK_DB_NAME + "-service";
 
     public static final String SERVER_PVC_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-pvc";
     public static final String SERVER_DEPLOYMENT_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-deployment";

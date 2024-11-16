@@ -126,7 +126,7 @@ public class KeycloakDBDeployment extends CRUDKubernetesDependentResource<Deploy
                                 .withTerminationGracePeriodSeconds(60L)
                                 .withImagePullSecrets(cr.getSpec().imagePullSecrets())
                                 .withContainers(new ContainerBuilder()
-                                        .withName(Constants.OIDC_DB_NAME)
+                                        .withName("database")
                                         .withImage(image)
                                         .withImagePullPolicy(imagePullPolicy)
                                         .withEnv(getEnvVars(cr))

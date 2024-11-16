@@ -1,31 +1,29 @@
 package org.trustify.operator.cdrs.v2alpha1.keycloak.services;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroup;
 import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroupBuilder;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.*;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.jboss.logging.Logger;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.KeycloakDBDeployment;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.KeycloakDBSecret;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.KeycloakDBService;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.KeycloakHttpTlsSecret;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.models.Keycloak;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.models.KeycloakSpec;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.models.spec.DatabaseSpec;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.models.spec.HostnameSpec;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.models.spec.HttpSpec;
 
+import java.util.AbstractMap;
 import java.util.Objects;
 import java.util.Optional;
 
 @ApplicationScoped
 public class KeycloakService {
-
-    private static final Logger logger = Logger.getLogger(KeycloakService.class);
 
     @Inject
     KubernetesClient k8sClient;
@@ -71,7 +69,7 @@ public class KeycloakService {
                 .create();
     }
 
-    public boolean isSubscriptionReady(Trustify cr) {
+    public AbstractMap.SimpleEntry<Boolean, String> isSubscriptionReady(Trustify cr) {
         Subscription subscription = k8sClient.resource(subscription(cr))
                 .inNamespace(cr.getMetadata().getNamespace())
                 .get();
@@ -79,14 +77,12 @@ public class KeycloakService {
                 .getCatalogHealth()
                 .stream().anyMatch(SubscriptionCatalogHealth::getHealthy);
         if (!isSubscriptionHealthy) {
-            logger.warn("Subscription is not healthy");
-            return false;
+            return new AbstractMap.SimpleEntry<>(false, "Subscription is not healthy");
         }
 
         String currentCSV = subscription.getStatus().getCurrentCSV();
         if (currentCSV == null) {
-            logger.warn("Subscription does not have currentCSV");
-            return false;
+            return new AbstractMap.SimpleEntry<>(false, "Subscription does not have currentCSV");
         }
 
         ClusterServiceVersion clusterServiceVersion = new ClusterServiceVersionBuilder()
@@ -98,26 +94,15 @@ public class KeycloakService {
                 .inNamespace(cr.getMetadata().getNamespace())
                 .get();
         if (clusterServiceVersion == null) {
-            logger.warn("ClusterServiceVersion does not exist");
-            return false;
+            return new AbstractMap.SimpleEntry<>(false, "ClusterServiceVersion does not exist");
         }
 
         String phase = clusterServiceVersion.getStatus().getPhase();
         if (!Objects.equals(phase, "Succeeded")) {
-            logger.info("CSV has not Succeeded yet. Waiting for it.");
-            return false;
+            return new AbstractMap.SimpleEntry<>(false, "CSV has not Succeeded yet. Waiting for it.");
         }
 
-        return true;
-    }
-
-    public boolean crdExists() {
-        CustomResourceDefinition customResourceDefinition = k8sClient.apiextensions().v1()
-                .customResourceDefinitions()
-                .withName("keycloaks.k8s.keycloak.org")
-                .get();
-
-        return customResourceDefinition != null;
+        return new AbstractMap.SimpleEntry<>(true, "Subscription is ready.");
     }
 
     public static String getKeycloakName(Trustify cr) {
@@ -153,7 +138,7 @@ public class KeycloakService {
         // Https
         spec.setHttpSpec(new HttpSpec());
         HttpSpec httpSpec = spec.getHttpSpec();
-        httpSpec.setTlsSecret("example-tls-secret");
+        httpSpec.setTlsSecret(KeycloakHttpTlsSecret.getSecretName(cr));
 
         return k8sClient.resource(keycloak)
                 .inNamespace(cr.getMetadata().getNamespace())

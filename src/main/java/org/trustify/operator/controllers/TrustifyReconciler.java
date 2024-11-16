@@ -21,6 +21,7 @@ import org.trustify.operator.cdrs.v2alpha1.keycloak.utils.KeycloakUtils;
 import org.trustify.operator.cdrs.v2alpha1.server.*;
 
 import java.time.Duration;
+import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -32,6 +33,11 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
         namespaces = WATCH_CURRENT_NAMESPACE,
         name = "trustify",
         dependents = {
+                @Dependent(
+                        name = "keycloak-tls-secret",
+                        type = KeycloakHttpTlsSecret.class,
+                        activationCondition = KeycloakHttpTlsSecretActivationCondition.class
+                ),
                 @Dependent(
                         name = "keycloak-db-pvc",
                         type = KeycloakDBPersistentVolumeClaim.class,
@@ -144,14 +150,10 @@ public class TrustifyReconciler implements Reconciler<Trustify>, Cleaner<Trustif
                 keycloakService.createSubscription(cr);
             }
 
-            if (!keycloakService.isSubscriptionReady(cr)) {
-                logger.info("Waiting for the Keycloak Operator to be ready");
+            AbstractMap.SimpleEntry<Boolean, String> subscriptionReady = keycloakService.isSubscriptionReady(cr);
+            if (!subscriptionReady.getKey()) {
+                logger.infof("Waiting for the Keycloak Operator to be ready: {}", subscriptionReady.getValue());
                 return Optional.of(UpdateControl.<Trustify>noUpdate().rescheduleAfter(5, TimeUnit.SECONDS));
-            }
-
-            if (!keycloakService.crdExists()) {
-                logger.error("Could not find the Keycloak Custom Resource Definition");
-                return Optional.of(UpdateControl.<Trustify>noUpdate().rescheduleAfter(15, TimeUnit.SECONDS));
             }
 
             Keycloak kcInstance = keycloakService.getCurrentInstance(cr)
