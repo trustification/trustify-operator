@@ -1,4 +1,4 @@
-package org.trustify.operator.cdrs.v2alpha1.server;
+package org.trustify.operator.cdrs.v2alpha1.ui;
 
 import io.fabric8.kubernetes.api.model.*;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -7,18 +7,17 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 import jakarta.enterprise.context.ApplicationScoped;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
-import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
 import org.trustify.operator.utils.CRDUtils;
 
 import java.util.Map;
 
-@KubernetesDependent(labelSelector = ServerService.LABEL_SELECTOR, resourceDiscriminator = ServerServiceDiscriminator.class)
+@KubernetesDependent(labelSelector = UIService.LABEL_SELECTOR, resourceDiscriminator = UIServiceDiscriminator.class)
 @ApplicationScoped
-public class ServerService extends CRUDKubernetesDependentResource<Service, Trustify> {
+public class UIService extends CRUDKubernetesDependentResource<Service, Trustify> {
 
-    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=server";
+    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=ui";
 
-    public ServerService() {
+    public UIService() {
         super(Service.class);
     }
 
@@ -37,7 +36,7 @@ public class ServerService extends CRUDKubernetesDependentResource<Service, Trus
                 .withName(getServiceName(cr))
                 .withNamespace(cr.getMetadata().getNamespace())
                 .withLabels(labels)
-                .addToLabels("component", "server")
+                .addToLabels("component", "ui")
                 .withOwnerReferences(CRDUtils.getOwnerReference(cr))
                 .endMetadata()
                 .withSpec(getServiceSpec(cr))
@@ -51,14 +50,9 @@ public class ServerService extends CRUDKubernetesDependentResource<Service, Trus
                                 .withName("http")
                                 .withPort(getServicePort(cr))
                                 .withProtocol(Constants.SERVICE_PROTOCOL)
-                                .build(),
-                        new ServicePortBuilder()
-                                .withName("http-infra")
-                                .withPort(getServiceInfraestructurePort(cr))
-                                .withProtocol(Constants.SERVICE_PROTOCOL)
                                 .build()
                 )
-                .withSelector(Constants.SERVER_SELECTOR_LABELS)
+                .withSelector(Constants.UI_SELECTOR_LABELS)
                 .withType("ClusterIP")
                 .build();
     }
@@ -67,20 +61,8 @@ public class ServerService extends CRUDKubernetesDependentResource<Service, Trus
         return Constants.HTTP_PORT;
     }
 
-    public static int getServiceInfraestructurePort(Trustify cr) {
-        return Constants.HTTP_INFRAESTRUCTURE_PORT;
-    }
-
     public static String getServiceName(Trustify cr) {
-        return cr.getMetadata().getName() + Constants.SERVER_SERVICE_SUFFIX;
+        return cr.getMetadata().getName() + Constants.UI_SERVICE_SUFFIX;
     }
 
-    public static String getServiceUrl(Trustify cr) {
-        return String.format("http://%s:%s", getServiceName(cr), getServicePort(cr));
-    }
-
-    public static boolean isTlsConfigured(Trustify cr) {
-        var tlsSecret = CRDUtils.getValueFromSubSpec(cr.getSpec().httpSpec(), TrustifySpec.HttpSpec::tlsSecret);
-        return tlsSecret.isPresent() && !tlsSecret.get().trim().isEmpty();
-    }
 }

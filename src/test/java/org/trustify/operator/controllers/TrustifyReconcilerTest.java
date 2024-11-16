@@ -16,8 +16,12 @@ import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.db.DBDeployment;
 import org.trustify.operator.cdrs.v2alpha1.db.DBService;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerDeployment;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerIngress;
+import org.trustify.operator.cdrs.v2alpha1.ui.UIDeployment;
+import org.trustify.operator.cdrs.v2alpha1.ui.UIIngress;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
+import org.trustify.operator.cdrs.v2alpha1.db.DBDeployment;
+import org.trustify.operator.cdrs.v2alpha1.db.DBService;
+import org.trustify.operator.cdrs.v2alpha1.ui.UIService;
 import org.trustify.operator.controllers.setup.K3sResource;
 
 import java.util.List;
@@ -31,6 +35,9 @@ public class TrustifyReconcilerTest {
 
     @ConfigProperty(name = "related.image.db")
     String dbImage;
+
+    @ConfigProperty(name = "related.image.ui")
+    String uiImage;
 
     @ConfigProperty(name = "related.image.server")
     String serverImage;
@@ -129,18 +136,18 @@ public class TrustifyReconcilerTest {
                             .inNamespace(metadata.getNamespace())
                             .withName(ServerDeployment.getDeploymentName(app))
                             .get();
-                    final var webContainer = serverDeployment.getSpec()
+                    final var serverContainer = serverDeployment.getSpec()
                             .getTemplate()
                             .getSpec()
                             .getContainers()
                             .stream()
                             .findFirst();
-                    MatcherAssert.assertThat("Server container not found", webContainer.isPresent(), Matchers.is(true));
-                    MatcherAssert.assertThat("Server container image not valid", webContainer.get().getImage(), Matchers.is(serverImage));
-                    List<Integer> webContainerPorts = webContainer.get().getPorts().stream()
+                    MatcherAssert.assertThat("Server container not found", serverContainer.isPresent(), Matchers.is(true));
+                    MatcherAssert.assertThat("Server container image not valid", serverContainer.get().getImage(), Matchers.is(serverImage));
+                    List<Integer> serverContainerPorts = serverContainer.get().getPorts().stream()
                             .map(ContainerPort::getContainerPort)
                             .toList();
-                    Assertions.assertTrue(webContainerPorts.contains(8080), "Server container port 8080 not found");
+                    Assertions.assertTrue(serverContainerPorts.contains(8080), "Server container port 8080 not found");
 
                     Assertions.assertEquals(1, serverDeployment.getStatus().getAvailableReplicas(), "Expected Server deployment number of replicas doesn't match");
 
@@ -156,10 +163,44 @@ public class TrustifyReconcilerTest {
                             .toList();
                     Assertions.assertTrue(serverServicePorts.contains(8080), "Server service port not valid");
 
+                    // UI Deployment
+                    final var uiDeployment = client.apps()
+                            .deployments()
+                            .inNamespace(metadata.getNamespace())
+                            .withName(UIDeployment.getDeploymentName(app))
+                            .get();
+                    final var uiContainer = uiDeployment.getSpec()
+                            .getTemplate()
+                            .getSpec()
+                            .getContainers()
+                            .stream()
+                            .findFirst();
+                    MatcherAssert.assertThat("UI container not found", uiContainer.isPresent(), Matchers.is(true));
+                    MatcherAssert.assertThat("UI container image not valid", uiContainer.get().getImage(), Matchers.is(uiImage));
+                    List<Integer> uiContainerPorts = uiContainer.get().getPorts().stream()
+                            .map(ContainerPort::getContainerPort)
+                            .toList();
+                    Assertions.assertTrue(uiContainerPorts.contains(8080), "UI container port 8080 not found");
+
+                    Assertions.assertEquals(1, uiDeployment.getStatus().getAvailableReplicas(), "Expected UI deployment number of replicas doesn't match");
+
+                    // Server service
+                    final var uiService = client.services()
+                            .inNamespace(metadata.getNamespace())
+                            .withName(UIService.getServiceName(app))
+                            .get();
+                    final var uiServicePorts = uiService.getSpec()
+                            .getPorts()
+                            .stream()
+                            .map(ServicePort::getPort)
+                            .toList();
+                    Assertions.assertTrue(uiServicePorts.contains(8080), "UI service port not valid");
+
+
                     // Ingress
                     final var ingress = client.network().v1().ingresses()
                             .inNamespace(metadata.getNamespace())
-                            .withName(ServerIngress.getIngressName(app))
+                            .withName(UIIngress.getIngressName(app))
                             .get();
 
                     final var rules = ingress.getSpec().getRules();
@@ -171,7 +212,7 @@ public class TrustifyReconcilerTest {
                     final var path = paths.get(0);
 
                     final var serviceBackend = path.getBackend().getService();
-                    MatcherAssert.assertThat(serviceBackend.getName(), Matchers.is(ServerService.getServiceName(app)));
+                    MatcherAssert.assertThat(serviceBackend.getName(), Matchers.is(UIService.getServiceName(app)));
                     MatcherAssert.assertThat(serviceBackend.getPort().getNumber(), Matchers.is(8080));
                 });
     }

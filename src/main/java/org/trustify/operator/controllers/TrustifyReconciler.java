@@ -14,6 +14,13 @@ import org.jboss.logging.Logger;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifyStatusCondition;
 import org.trustify.operator.cdrs.v2alpha1.db.*;
+import org.trustify.operator.cdrs.v2alpha1.server.ServerDeployment;
+import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
+import org.trustify.operator.cdrs.v2alpha1.server.ServerStoragePersistentVolumeClaim;
+import org.trustify.operator.cdrs.v2alpha1.server.ServerStoragePersistentVolumeClaimActivationCondition;
+import org.trustify.operator.cdrs.v2alpha1.ui.UIDeployment;
+import org.trustify.operator.cdrs.v2alpha1.ui.UIIngress;
+import org.trustify.operator.cdrs.v2alpha1.ui.UIService;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.*;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.models.Keycloak;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakService;
@@ -100,9 +107,19 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
                 ),
 
                 @Dependent(
-                        name = "ingress",
-                        type = ServerIngress.class,
-                        readyPostcondition = ServerIngress.class
+                        name = "ui-deployment",
+                        type = UIDeployment.class,
+                        readyPostcondition = UIDeployment.class
+                ),
+                @Dependent(
+                        name = "ui-service",
+                        type = UIService.class
+                ),
+
+                @Dependent(
+                        name = "ui-ingress",
+                        type = UIIngress.class,
+                        readyPostcondition = UIIngress.class
                 )
         }
 )

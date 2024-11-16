@@ -9,6 +9,10 @@ inputs:
     description: "image uri for operator (ie. ghcr.io/<namespace>/<image-name>:<tag>)"
     required: false
     default: ""
+  ui:
+    description: "image uri for trustify-ui server (ie. ghcr.io/<namespace>/<image-name>:<tag>)"
+    required: false
+    default: ""
   server:
     description: "image uri for trustify server (ie. ghcr.io/<namespace>/<image-name>:<tag>)"
     required: false
@@ -43,6 +47,7 @@ runs:
       [ -n "${{ inputs.operator }}" ] && export IMG="${{ inputs.operator }}"
 
       OPTS=""
+      [ -n "${{ inputs.ui }}" ] && OPTS+=" -Drelated.image.ui=${{ inputs.ui }}"
       [ -n "${{ inputs.server }}" ] && OPTS+=" -Drelated.image.server=${{ inputs.server }}"
       [ -n "${{ inputs.server_postgres }}" ] && OPTS+=" -Drelated.image.db=${{ inputs.server_postgres }}"
 

@@ -1,6 +1,7 @@
 # Operator config
 related:
   image:
+    ui: ${RELATED_IMAGE_UI:ghcr.io/trustification/trustify-ui:latest}
     server: ${RELATED_IMAGE_SERVER:ghcr.io/trustification/trustd:latest}
     db: ${RELATED_IMAGE_DB:quay.io/sclorg/postgresql-15-c9s:latest}
     pull-policy: Always
@@ -27,6 +28,7 @@ quarkus:
       generate-service-monitor: "false"
     env:
       vars:
+        related-image-trustify-ui: ${related.image.ui}
         related-image-trustify-server: ${related.image.server}
         related-image-db: ${related.image.db}
         related-image-importer: ${related.image.importer}
