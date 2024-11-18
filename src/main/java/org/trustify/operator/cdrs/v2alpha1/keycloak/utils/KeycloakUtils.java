@@ -4,19 +4,21 @@ import okio.ByteString;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
+import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.SecureRandom;
+import java.util.Objects;
 import java.util.Optional;
 
 public class KeycloakUtils {
 
     public static boolean isKeycloakRequired(Trustify cr) {
         return Optional.ofNullable(cr.getSpec().oidcSpec())
-                .map(oidcSpec -> oidcSpec.enabled() && (oidcSpec.serverUrl() == null || oidcSpec.serverUrl().isBlank()))
+                .map(oidcSpec -> oidcSpec.enabled() && (oidcSpec.type() == null || Objects.equals(oidcSpec.type(), TrustifySpec.OidcProviderType.EMBEDDED)))
                 .orElse(false);
     }
 

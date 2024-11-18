@@ -99,7 +99,8 @@ public class KeycloakDBDeployment extends CRUDKubernetesDependentResource<Deploy
         String imagePullPolicy = Optional.ofNullable(cr.getSpec().imagePullPolicy()).orElse(config.imagePullPolicy());
 
         TrustifySpec.DatabaseSpec databaseSpec = Optional.ofNullable(cr.getSpec().oidcSpec())
-                .map(TrustifySpec.OidcSpec::databaseSpec)
+                .flatMap(oidcSpec -> Optional.ofNullable(oidcSpec.embeddedOidcSpec()))
+                .flatMap(embeddedOidcSpec -> Optional.ofNullable(embeddedOidcSpec.databaseSpec()))
                 .orElse(null);
         TrustifySpec.ResourcesLimitSpec resourcesLimitSpec = CRDUtils.getValueFromSubSpec(databaseSpec, TrustifySpec.DatabaseSpec::resourceLimits)
                 .orElse(null);
@@ -222,6 +223,7 @@ public class KeycloakDBDeployment extends CRUDKubernetesDependentResource<Deploy
 
     public static SecretKeySelector getUsernameSecretKeySelector(Trustify cr) {
         return Optional.ofNullable(cr.getSpec().oidcSpec())
+                .flatMap(oidcSpec -> Optional.ofNullable(oidcSpec.embeddedOidcSpec()))
                 .flatMap(oidcSpec -> Optional.ofNullable(oidcSpec.databaseSpec()))
                 .map(TrustifySpec.DatabaseSpec::usernameSecret)
                 .map(secret -> new SecretKeySelectorBuilder()
@@ -240,6 +242,7 @@ public class KeycloakDBDeployment extends CRUDKubernetesDependentResource<Deploy
 
     public static SecretKeySelector getPasswordSecretKeySelector(Trustify cr) {
         return Optional.ofNullable(cr.getSpec().oidcSpec())
+                .flatMap(oidcSpec -> Optional.ofNullable(oidcSpec.embeddedOidcSpec()))
                 .flatMap(oidcSpec -> Optional.ofNullable(oidcSpec.databaseSpec()))
                 .map(TrustifySpec.DatabaseSpec::passwordSecret)
                 .map(secret -> new SecretKeySelectorBuilder()

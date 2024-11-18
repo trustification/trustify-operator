@@ -15,14 +15,15 @@ public class KeycloakDBSecretActivationCondition implements Condition<Secret, Tr
 
     @Override
     public boolean isMet(DependentResource<Secret, Trustify> resource, Trustify cr, Context<Trustify> context) {
-        boolean databaseRequired = KeycloakUtils.isKeycloakRequired(cr);
+        boolean keycloakRequired = KeycloakUtils.isKeycloakRequired(cr);
 
         boolean manualSecretIsNotSet = Optional.ofNullable(cr.getSpec().oidcSpec())
-                .flatMap(oidcSpec -> Optional.ofNullable(oidcSpec.databaseSpec()))
+                .flatMap(oidcSpec -> Optional.ofNullable(oidcSpec.embeddedOidcSpec()))
+                .flatMap(embeddedOidcSpec -> Optional.ofNullable(embeddedOidcSpec.databaseSpec()))
                 .map(databaseSpec -> databaseSpec.usernameSecret() == null || databaseSpec.passwordSecret() == null)
                 .orElse(true);
 
-        return databaseRequired && manualSecretIsNotSet;
+        return keycloakRequired && manualSecretIsNotSet;
     }
 
 }

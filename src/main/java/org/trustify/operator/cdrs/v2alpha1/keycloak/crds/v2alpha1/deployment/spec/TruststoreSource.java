@@ -1,4 +1,4 @@
-package org.trustify.operator.cdrs.v2alpha1.keycloak.models.spec;
+package org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.deployment.spec;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 

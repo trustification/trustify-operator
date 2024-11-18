@@ -1,4 +1,4 @@
-package org.trustify.operator.cdrs.v2alpha1.keycloak.models;
+package org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.deployment;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.fabric8.kubernetes.model.annotation.LabelSelector;

@@ -1,6 +1,5 @@
 package org.trustify.operator.cdrs.v2alpha1.keycloak.services;
 
-import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroup;
 import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroupBuilder;
@@ -8,23 +7,12 @@ import io.fabric8.openshift.api.model.operatorhub.v1alpha1.*;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.KeycloakDBDeployment;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.KeycloakDBSecret;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.KeycloakDBService;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.KeycloakHttpTlsSecret;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.models.Keycloak;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.models.KeycloakSpec;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.models.spec.DatabaseSpec;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.models.spec.HostnameSpec;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.models.spec.HttpSpec;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.models.spec.IngressSpec;
 
 import java.util.AbstractMap;
 import java.util.Objects;
-import java.util.Optional;
 
 @ApplicationScoped
-public class KeycloakService {
+public class KeycloakOperator {
 
     @Inject
     KubernetesClient k8sClient;
@@ -74,7 +62,7 @@ public class KeycloakService {
         Subscription subscription = k8sClient.resource(subscription(cr))
                 .inNamespace(cr.getMetadata().getNamespace())
                 .get();
-        boolean isSubscriptionHealthy = subscription.getStatus()
+        boolean isSubscriptionHealthy = subscription != null && subscription.getStatus()
                 .getCatalogHealth()
                 .stream().anyMatch(SubscriptionCatalogHealth::getHealthy);
         if (!isSubscriptionHealthy) {
@@ -106,60 +94,4 @@ public class KeycloakService {
         return new AbstractMap.SimpleEntry<>(true, "Subscription is ready.");
     }
 
-    public static String getKeycloakName(Trustify cr) {
-        return cr.getMetadata().getName() + "-keycloak";
-    }
-
-    public Keycloak initInstance(Trustify cr) {
-        Keycloak keycloak = new Keycloak();
-
-        keycloak.setMetadata(new ObjectMeta());
-        keycloak.getMetadata().setName(getKeycloakName(cr));
-        keycloak.setSpec(new KeycloakSpec());
-
-        KeycloakSpec spec = keycloak.getSpec();
-        spec.setInstances(1);
-
-        // Database
-        spec.setDatabaseSpec(new DatabaseSpec());
-        DatabaseSpec databaseSpec = spec.getDatabaseSpec();
-        databaseSpec.setVendor("postgres");
-        databaseSpec.setHost(KeycloakDBService.getServiceName(cr));
-        databaseSpec.setPort(5432);
-        databaseSpec.setDatabase(KeycloakDBDeployment.getDatabaseName(cr));
-
-        databaseSpec.setUsernameSecret(KeycloakDBSecret.getUsernameKeySelector(cr));
-        databaseSpec.setPasswordSecret(KeycloakDBSecret.getPasswordKeySelector(cr));
-
-        // Https
-        spec.setHttpSpec(new HttpSpec());
-        HttpSpec httpSpec = spec.getHttpSpec();
-        httpSpec.setTlsSecret(KeycloakHttpTlsSecret.getSecretName(cr));
-
-        // Ingress
-        spec.setIngressSpec(new IngressSpec());
-        spec.getIngressSpec().setIngressEnabled(false);
-
-        // Hostname
-        spec.setHostnameSpec(new HostnameSpec());
-        spec.getHostnameSpec().setStrict(false);
-
-        return k8sClient.resource(keycloak)
-                .inNamespace(cr.getMetadata().getNamespace())
-                .create();
-    }
-
-    public Optional<Keycloak> getCurrentInstance(Trustify cr) {
-        Keycloak keycloak = k8sClient.resources(Keycloak.class)
-                .inNamespace(cr.getMetadata().getNamespace())
-                .withName(getKeycloakName(cr))
-                .get();
-        return Optional.ofNullable(keycloak);
-    }
-
-    public void cleanupDependentResources(Trustify cr) {
-        getCurrentInstance(cr).ifPresent(keycloak -> {
-            k8sClient.resource(keycloak).delete();
-        });
-    }
 }

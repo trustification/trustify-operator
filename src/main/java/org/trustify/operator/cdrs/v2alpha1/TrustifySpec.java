@@ -108,19 +108,49 @@ public record TrustifySpec(
     ) {
     }
 
-    public record OidcSpec(
-            @JsonPropertyDescription("Enable Oidc Auth.")
-            boolean enabled,
+    public enum OidcProviderType {
+        EMBEDDED("embedded"),
+        EXTERNAL("external");
+        private final String value;
+
+        OidcProviderType(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+    }
+
+    public record EmbeddedOidcSpec(
+            @JsonProperty("db")
+            @JsonPropertyDescription("In this section you can find all properties related to connect to a database.")
+            DatabaseSpec databaseSpec
+    ) {
+    }
+
+    public record ExternalOidcSpec(
             @JsonPropertyDescription("Oidc server url.")
             String serverUrl,
             @JsonPropertyDescription("Oidc client id for the UI.")
             String uiClientId,
             @JsonPropertyDescription("Oidc client id for the Server.")
-            String serverClientId,
+            String serverClientId
+    ) {
+    }
 
-            @JsonProperty("db")
-            @JsonPropertyDescription("In this section you can find all properties related to connect to a database.")
-            DatabaseSpec databaseSpec
+    public record OidcSpec(
+            @JsonPropertyDescription("Enable Oidc Auth.")
+            boolean enabled,
+
+            @JsonPropertyDescription("OIDC Provider type.")
+            OidcProviderType type,
+
+            @JsonProperty("embedded")
+            EmbeddedOidcSpec embeddedOidcSpec,
+
+            @JsonProperty("external")
+            ExternalOidcSpec externalOidcSpec
     ) {
     }
 

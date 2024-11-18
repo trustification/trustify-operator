@@ -1,4 +1,4 @@
-package org.trustify.operator.cdrs.v2alpha1.keycloak.models;
+package org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.deployment;
 
 public class KeycloakStatusCondition extends StatusCondition {
     public static final String READY = "Ready";

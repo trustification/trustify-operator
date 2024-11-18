@@ -113,7 +113,7 @@ public class TrustifyDistConfigurator {
                         .mapOption("TRUSTD_DB_USER", spec -> DBDeployment.getUsernameSecretKeySelector(cr))
                         .mapOption("TRUSTD_DB_PASSWORD", spec -> DBDeployment.getPasswordSecretKeySelector(cr))
                         .mapOption("TRUSTD_DB_NAME", spec -> DBDeployment.getDatabaseName(cr))
-                        .mapOption("TRUSTD_DB_HOST", spec -> DBService.getServiceName(cr))
+                        .mapOption("TRUSTD_DB_HOST", spec -> String.format("%s.%s.svc", DBService.getServiceName(cr), cr.getMetadata().getNamespace()))
                         .mapOption("TRUSTD_DB_PORT", spec -> DBDeployment.getDatabasePort(cr))
                         .getEnvVars()
                 );
@@ -181,14 +181,45 @@ public class TrustifyDistConfigurator {
 
     private void configureOidc() {
         List<EnvVar> envVars = Optional.ofNullable(cr.getSpec().oidcSpec())
-                .map(oidcSpec -> optionMapper(oidcSpec)
-                        .mapOption("AUTH_DISABLED", spec -> !spec.enabled())
-                        .mapOption("AUTHENTICATOR_OIDC_ISSUER_URL", TrustifySpec.OidcSpec::serverUrl)
-                        .mapOption("AUTHENTICATOR_OIDC_CLIENT_IDS", TrustifySpec.OidcSpec::serverClientId)
-                        .mapOption("UI_ISSUER_URL", TrustifySpec.OidcSpec::serverUrl)
-                        .mapOption("UI_CLIENT_ID", TrustifySpec.OidcSpec::uiClientId)
-                        .getEnvVars()
-                )
+                .map(oidcSpec -> {
+                    if (oidcSpec.enabled()) {
+                        TrustifySpec.OidcProviderType providerType = Objects.nonNull(oidcSpec.type()) ? oidcSpec.type() : TrustifySpec.OidcProviderType.EMBEDDED;
+
+                        List<EnvVar> providerEnvs;
+                        switch (providerType) {
+                            case EXTERNAL -> {
+                                providerEnvs = Optional.ofNullable(oidcSpec.externalOidcSpec())
+                                        .map(externalOidcSpec -> optionMapper(externalOidcSpec)
+                                                .mapOption("AUTHENTICATOR_OIDC_ISSUER_URL", TrustifySpec.ExternalOidcSpec::serverUrl)
+                                                .mapOption("AUTHENTICATOR_OIDC_CLIENT_IDS", TrustifySpec.ExternalOidcSpec::serverClientId)
+                                                .mapOption("UI_ISSUER_URL", TrustifySpec.ExternalOidcSpec::serverUrl)
+                                                .mapOption("UI_CLIENT_ID", TrustifySpec.ExternalOidcSpec::uiClientId)
+                                                .getEnvVars()
+                                        )
+                                        .orElseGet(ArrayList::new);
+                            }
+                            case EMBEDDED -> {
+                                providerEnvs = new ArrayList<>();
+                            }
+                            default -> providerEnvs = Collections.emptyList();
+                        }
+
+                        List<EnvVar> result = new ArrayList<>();
+                        result.add(new EnvVarBuilder()
+                                .withName("AUTH_DISABLED")
+                                .withValue(Boolean.FALSE.toString())
+                                .build()
+                        );
+                        result.addAll(providerEnvs);
+                        return result;
+                    } else {
+                        return List.of(new EnvVarBuilder()
+                                .withName("AUTH_DISABLED")
+                                .withValue(Boolean.TRUE.toString())
+                                .build()
+                        );
+                    }
+                })
                 .orElseGet(() -> List.of(new EnvVarBuilder()
                         .withName("AUTH_DISABLED")
                         .withValue(Boolean.TRUE.toString())

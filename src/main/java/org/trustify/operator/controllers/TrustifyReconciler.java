@@ -4,6 +4,7 @@ import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import io.javaoperatorsdk.operator.api.config.informer.InformerConfiguration;
 import io.javaoperatorsdk.operator.api.reconciler.*;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.Dependent;
@@ -14,6 +15,14 @@ import org.jboss.logging.Logger;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifyStatusCondition;
 import org.trustify.operator.cdrs.v2alpha1.db.*;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.*;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.deployment.Keycloak;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.realmimport.KeycloakRealmImport;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.realmimport.KeycloakRealmImportStatusCondition;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakOperator;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakRealm;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakServer;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.utils.KeycloakUtils;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerDeployment;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerStoragePersistentVolumeClaim;
@@ -21,11 +30,6 @@ import org.trustify.operator.cdrs.v2alpha1.server.ServerStoragePersistentVolumeC
 import org.trustify.operator.cdrs.v2alpha1.ui.UIDeployment;
 import org.trustify.operator.cdrs.v2alpha1.ui.UIIngress;
 import org.trustify.operator.cdrs.v2alpha1.ui.UIService;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.*;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.models.Keycloak;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakService;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.utils.KeycloakUtils;
-import org.trustify.operator.cdrs.v2alpha1.server.*;
 
 import java.time.Duration;
 import java.util.AbstractMap;
@@ -133,7 +137,16 @@ public class TrustifyReconciler implements Reconciler<Trustify>, Cleaner<Trustif
     public static final String SERVICE_EVENT_SOURCE = "serviceSource";
 
     @Inject
-    KeycloakService keycloakService;
+    KubernetesClient k8sClient;
+
+    @Inject
+    KeycloakOperator keycloakOperator;
+
+    @Inject
+    KeycloakServer keycloakServer;
+
+    @Inject
+    KeycloakRealm keycloakRealm;
 
     @Override
     public void initContext(Trustify cr, Context<Trustify> context) {
@@ -154,31 +167,53 @@ public class TrustifyReconciler implements Reconciler<Trustify>, Cleaner<Trustif
 
     @Override
     public DeleteControl cleanup(Trustify cr, Context<Trustify> context) {
-        keycloakService.cleanupDependentResources(cr);
+        keycloakRealm.cleanupDependentResources(cr);
+        keycloakServer.cleanupDependentResources(cr);
+
         return DeleteControl.defaultDelete();
     }
 
     private Optional<UpdateControl<Trustify>> createOrUpdateKeycloakResources(Trustify cr, Context<Trustify> context) {
         boolean isKcRequired = KeycloakUtils.isKeycloakRequired(cr);
         if (isKcRequired) {
-            boolean kcSubscriptionExists = keycloakService.subscriptionExists(cr);
+            // Keycloak Operator
+            boolean kcSubscriptionExists = keycloakOperator.subscriptionExists(cr);
             if (!kcSubscriptionExists) {
                 logger.info("Installing Keycloak Operator");
-                keycloakService.createSubscription(cr);
+                keycloakOperator.createSubscription(cr);
             }
 
-            AbstractMap.SimpleEntry<Boolean, String> subscriptionReady = keycloakService.isSubscriptionReady(cr);
+            AbstractMap.SimpleEntry<Boolean, String> subscriptionReady = keycloakOperator.isSubscriptionReady(cr);
             if (!subscriptionReady.getKey()) {
                 logger.infof("Waiting for the Keycloak Operator to be ready: {}", subscriptionReady.getValue());
                 return Optional.of(UpdateControl.<Trustify>noUpdate().rescheduleAfter(5, TimeUnit.SECONDS));
             }
 
-            Keycloak kcInstance = keycloakService.getCurrentInstance(cr)
-                    .orElseGet(() -> keycloakService.initInstance(cr));
+            // Keycloak Server
+            Keycloak kcInstance = keycloakServer.getCurrentInstance(cr)
+                    .orElseGet(() -> {
+                        logger.info("Creating a Keycloak Server");
+                        return keycloakServer.initInstance(cr);
+                    });
             boolean isKcInstanceReady = kcInstance.getStatus() != null && kcInstance.getStatus()
                     .getConditions().stream()
                     .anyMatch(condition -> Objects.equals(condition.getType(), "Ready") && Objects.equals(condition.getStatus(), true));
             if (!isKcInstanceReady) {
+                logger.info("Waiting for the Keycloak Server to be ready");
+                return Optional.of(UpdateControl.<Trustify>noUpdate().rescheduleAfter(5, TimeUnit.SECONDS));
+            }
+
+            // Keycloak Realm
+            KeycloakRealmImport realmImportInstance = keycloakRealm.getCurrentInstance(cr)
+                    .orElseGet(() -> {
+                        logger.info("Creating a KeycloakRealmImport");
+                        return keycloakRealm.initInstance(cr);
+                    });
+            boolean isRealmImportInstanceReady = realmImportInstance.getStatus() != null && realmImportInstance.getStatus()
+                    .getConditions().stream()
+                    .anyMatch(condition -> Objects.equals(condition.getType(), KeycloakRealmImportStatusCondition.DONE) && Objects.equals(condition.getStatus(), true));
+            if (!isRealmImportInstanceReady) {
+                logger.info("Waiting for the KeycloakRealmImport to be ready");
                 return Optional.of(UpdateControl.<Trustify>noUpdate().rescheduleAfter(5, TimeUnit.SECONDS));
             }
         }

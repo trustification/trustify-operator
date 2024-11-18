@@ -1,4 +1,4 @@
-package org.trustify.operator.cdrs.v2alpha1.keycloak.models;
+package org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.deployment;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -7,7 +7,7 @@ import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.model.annotation.SpecReplicas;
 import org.trustify.operator.ValueOrSecret;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.models.spec.*;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.deployment.spec.*;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
