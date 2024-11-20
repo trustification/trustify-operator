@@ -1,10 +1,7 @@
 package org.trustify.operator.cdrs.v2alpha1.keycloak.services;
 
-import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
-import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.dsl.Resource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.trustify.operator.ValueOrSecret;
@@ -19,8 +16,6 @@ import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.deployment.spe
 import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.deployment.spec.HostnameSpec;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.deployment.spec.HttpSpec;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.deployment.spec.IngressSpec;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.realmimport.KeycloakRealmImport;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.realmimport.KeycloakRealmImportSpec;
 
 import java.util.List;
 import java.util.Optional;

@@ -62,7 +62,7 @@ public class KeycloakOperator {
         Subscription subscription = k8sClient.resource(subscription(cr))
                 .inNamespace(cr.getMetadata().getNamespace())
                 .get();
-        boolean isSubscriptionHealthy = subscription != null && subscription.getStatus()
+        boolean isSubscriptionHealthy = subscription != null && subscription.getStatus() != null && subscription.getStatus()
                 .getCatalogHealth()
                 .stream().anyMatch(SubscriptionCatalogHealth::getHealthy);
         if (!isSubscriptionHealthy) {

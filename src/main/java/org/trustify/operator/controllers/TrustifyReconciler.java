@@ -185,7 +185,7 @@ public class TrustifyReconciler implements Reconciler<Trustify>, Cleaner<Trustif
 
             AbstractMap.SimpleEntry<Boolean, String> subscriptionReady = keycloakOperator.isSubscriptionReady(cr);
             if (!subscriptionReady.getKey()) {
-                logger.infof("Waiting for the Keycloak Operator to be ready: {}", subscriptionReady.getValue());
+                logger.infof("Waiting for the Keycloak Operator to be ready: %s", subscriptionReady.getValue());
                 return Optional.of(UpdateControl.<Trustify>noUpdate().rescheduleAfter(5, TimeUnit.SECONDS));
             }
 
@@ -227,7 +227,7 @@ public class TrustifyReconciler implements Reconciler<Trustify>, Cleaner<Trustif
                 .map(wrs -> {
                     if (wrs.allDependentResourcesReady()) {
                         if (cr.getStatus().isAvailable()) {
-                            logger.infof("Trustify {} is ready to be used", cr.getMetadata().getName());
+                            logger.infof("Trustify %s is ready to be used", cr.getMetadata().getName());
                         }
 
                         TrustifyStatusCondition status = new TrustifyStatusCondition();
