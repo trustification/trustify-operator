@@ -7,6 +7,8 @@ import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
 import org.trustify.operator.cdrs.v2alpha1.db.DBDeployment;
 import org.trustify.operator.cdrs.v2alpha1.db.DBService;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakRealm;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakServer;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerStoragePersistentVolumeClaim;
 
@@ -199,7 +201,24 @@ public class TrustifyDistConfigurator {
                                         .orElseGet(ArrayList::new);
                             }
                             case EMBEDDED -> {
-                                providerEnvs = new ArrayList<>();
+                                providerEnvs = List.of(
+                                        new EnvVarBuilder()
+                                                .withName("AUTHENTICATOR_OIDC_ISSUER_URL")
+                                                .withValue(KeycloakServer.getServiceHost(cr) + KeycloakRealm.getRealmClientPath(cr))
+                                                .build(),
+                                        new EnvVarBuilder()
+                                                .withName("AUTHENTICATOR_OIDC_CLIENT_IDS")
+                                                .withValue(KeycloakRealm.getBackendClientName(cr))
+                                                .build(),
+                                        new EnvVarBuilder()
+                                                .withName("UI_ISSUER_URL")
+                                                .withValue(KeycloakServer.getServiceHost(cr))
+                                                .build(),
+                                        new EnvVarBuilder()
+                                                .withName("UI_CLIENT_ID")
+                                                .withValue(KeycloakRealm.getFrontendClientName(cr))
+                                                .build()
+                                );
                             }
                             default -> providerEnvs = Collections.emptyList();
                         }

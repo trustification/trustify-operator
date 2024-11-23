@@ -225,6 +225,10 @@ public class UIDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
                                         new EnvVarBuilder()
                                                 .withName("OIDC_SERVER_IS_EMBEDDED")
                                                 .withValue(Boolean.TRUE.toString())
+                                                .build(),
+                                        new EnvVarBuilder()
+                                                .withName("OIDC_SERVER_EMBEDDED_PATH")
+                                                .withValue(String.format("/auth/realms/%s", KeycloakRealm.getRealmName(cr)))
                                                 .build()
                                 );
                             }

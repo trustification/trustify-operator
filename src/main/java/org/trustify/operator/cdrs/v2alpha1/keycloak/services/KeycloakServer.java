@@ -23,6 +23,8 @@ import java.util.Optional;
 @ApplicationScoped
 public class KeycloakServer {
 
+    public static final String RELATIVE_PATH = "/auth";
+
     @Inject
     KubernetesClient k8sClient;
 
@@ -54,6 +56,7 @@ public class KeycloakServer {
         // Https
         spec.setHttpSpec(new HttpSpec());
         HttpSpec httpSpec = spec.getHttpSpec();
+        httpSpec.setHttpEnabled(true);
         httpSpec.setTlsSecret(KeycloakHttpTlsSecret.getSecretName(cr));
 
         // Ingress
@@ -66,7 +69,9 @@ public class KeycloakServer {
 
         // Additional options
         spec.setAdditionalOptions(List.of(
-                new ValueOrSecret("http-relative-path", "/auth", null)
+                new ValueOrSecret("proxy-headers", "xforwarded", null),
+                new ValueOrSecret("http-relative-path", RELATIVE_PATH, null),
+                new ValueOrSecret("http-management-relative-path", RELATIVE_PATH, null)
         ));
 
         return k8sClient.resource(keycloak)
@@ -89,6 +94,6 @@ public class KeycloakServer {
     }
 
     public static String getServiceHost(Trustify cr) {
-        return String.format("%s://%s.%s.svc:%s", "https", cr.getMetadata().getName() + "-keycloak-service", cr.getMetadata().getNamespace(), 8443);
+        return String.format("%s://%s.%s.svc:%s", "http", cr.getMetadata().getName() + "-keycloak-service", cr.getMetadata().getNamespace(), 8080);
     }
 }

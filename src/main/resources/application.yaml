@@ -21,6 +21,8 @@ quarkus:
     generate-with-watched-namespaces: JOSDK_WATCH_CURRENT
     helm:
       enabled: true
+  kubernetes-client:
+    request-retry-backoff-limit: 10
   # https://quarkus.io/guides/deploying-to-kubernetes#environment-variables-from-keyvalue-pairs
   kubernetes:
     idempotent: "true"
