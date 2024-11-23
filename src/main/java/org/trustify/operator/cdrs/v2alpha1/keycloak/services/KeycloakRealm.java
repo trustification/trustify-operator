@@ -16,9 +16,9 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class KeycloakRealm {
@@ -44,7 +44,7 @@ public class KeycloakRealm {
         return "trustify";
     }
 
-    public static String getFrontendClientName(Trustify cr) {
+    public static String getUIClientName(Trustify cr) {
         return "frontend";
     }
 
@@ -87,11 +87,13 @@ public class KeycloakRealm {
             realmRepresentation.getRoles().setRealm(new ArrayList<>());
         }
 
-        RoleRepresentation userRole = new RoleRepresentation("user", "User of the application", false);
-        RoleRepresentation adminRole = new RoleRepresentation("admin", "Admin of the application", false);
+        RoleRepresentation chickenUserRole = new RoleRepresentation("chicken-user", "User of the application", false);
+        RoleRepresentation chickenManagerRole = new RoleRepresentation("chicken-manager", "User of the application", false);
+        RoleRepresentation chickenAdminRole = new RoleRepresentation("chicken-admin", "Admin of the application", false);
         realmRepresentation.getRoles().setRealm(List.of(
-                userRole,
-                adminRole
+                chickenUserRole,
+                chickenManagerRole,
+                chickenAdminRole
         ));
 
         // Scopes
@@ -112,21 +114,29 @@ public class KeycloakRealm {
         ));
 
         // Role-Scope Mapping
-        Consumer<ClientScopeRepresentation> applyRealmScopeMapping = scopeRepresentation -> {
+        BiConsumer<ClientScopeRepresentation, List<RoleRepresentation>> applyRolesToScope = (scopeRepresentation, roles) -> {
             realmRepresentation
                     .clientScopeScopeMapping(scopeRepresentation.getName())
-                    .setRoles(Set.of(userRole.getName()));
+                    .setRoles(roles.stream()
+                            .map(RoleRepresentation::getName)
+                            .collect(Collectors.toSet())
+                    );
         };
 
-        applyRealmScopeMapping.accept(readDocumentScope);
-        applyRealmScopeMapping.accept(createDocumentScope);
-        applyRealmScopeMapping.accept(updateDocumentScope);
-        applyRealmScopeMapping.accept(deleteDocumentScope);
+//        applyRolesToScope.accept(readDocumentScope, List.of(chickenManagerRole, chickenUserRole));
+        applyRolesToScope.accept(createDocumentScope, List.of(chickenManagerRole));
+//        applyRolesToScope.accept(updateDocumentScope, List.of(chickenManagerRole));
+        applyRolesToScope.accept(deleteDocumentScope, List.of(chickenManagerRole));
 
-        // Default User
+        // Users
         UserRepresentation developerUser = new UserRepresentation();
-        realmRepresentation.setUsers(List.of(developerUser));
+        UserRepresentation adminUser = new UserRepresentation();
+        realmRepresentation.setUsers(List.of(
+                developerUser,
+                adminUser
+        ));
 
+        // Developer User
         developerUser.setUsername("developer");
         developerUser.setEmail("developer@trustify.org");
         developerUser.setFirstName("Developer");
@@ -136,36 +146,58 @@ public class KeycloakRealm {
                 "default-roles-trustify",
                 "offline_access",
                 "uma_authorization",
-                userRole.getName())
+                chickenUserRole.getName())
         );
 
-        CredentialRepresentation credentialRepresentation = new CredentialRepresentation();
-        credentialRepresentation.setType(CredentialRepresentation.PASSWORD);
-        credentialRepresentation.setValue("password");
-        credentialRepresentation.setTemporary(false);
+        CredentialRepresentation developerCredentials = new CredentialRepresentation();
+        developerCredentials.setType(CredentialRepresentation.PASSWORD);
+        developerCredentials.setValue("password");
+        developerCredentials.setTemporary(false);
 
-        developerUser.setCredentials(List.of(credentialRepresentation));
+        developerUser.setCredentials(List.of(developerCredentials));
+
+        // Admin User
+        adminUser.setUsername("admin");
+        adminUser.setEmail("admin@trustify.org");
+        adminUser.setFirstName("Admin");
+        adminUser.setLastName("Admin");
+        adminUser.setEnabled(true);
+        adminUser.setRealmRoles(List.of(
+                "default-roles-trustify",
+                "offline_access",
+                "uma_authorization",
+                chickenUserRole.getName(),
+                chickenManagerRole.getName(),
+                chickenAdminRole.getName()
+        ));
+
+        CredentialRepresentation adminCredentials = new CredentialRepresentation();
+        adminCredentials.setType(CredentialRepresentation.PASSWORD);
+        adminCredentials.setValue("password");
+        adminCredentials.setTemporary(false);
+
+        adminUser.setCredentials(List.of(adminCredentials));
 
         // Clients
         if (realmRepresentation.getClients() == null || realmRepresentation.getClients().isEmpty()) {
             realmRepresentation.setClients(new ArrayList<>());
         }
 
-        ClientRepresentation frontendClient = new ClientRepresentation();
+        ClientRepresentation uiClient = new ClientRepresentation();
         ClientRepresentation backendClient = new ClientRepresentation();
 
         realmRepresentation.getClients().addAll(List.of(
-                frontendClient,
+                uiClient,
                 backendClient
         ));
 
-        // Frontend Client
-        frontendClient.setClientId(getFrontendClientName(cr));
-        frontendClient.setRedirectUris(List.of("*"));
-        frontendClient.setWebOrigins(List.of("*"));
-        frontendClient.setPublicClient(true);
+        // UI Client
+        uiClient.setClientId(getUIClientName(cr));
+        uiClient.setRedirectUris(List.of("*"));
+        uiClient.setWebOrigins(List.of("*"));
+        uiClient.setPublicClient(true);
 
-        frontendClient.setDefaultClientScopes(List.of(
+        uiClient.setDefaultClientScopes(List.of(
                 "acr",
                 "address",
                 "basic",
@@ -184,7 +216,31 @@ public class KeycloakRealm {
 
         // Backend Client
         backendClient.setClientId(getBackendClientName(cr));
-        backendClient.setBearerOnly(true);
+        backendClient.setRedirectUris(List.of("*"));
+        backendClient.setWebOrigins(List.of("*"));
+
+        backendClient.setStandardFlowEnabled(false);
+        backendClient.setDirectAccessGrantsEnabled(false);
+        backendClient.setServiceAccountsEnabled(true);
+        backendClient.setFrontchannelLogout(false);
+        backendClient.setFullScopeAllowed(true);
+
+        backendClient.setDefaultClientScopes(List.of(
+                "acr",
+                "address",
+                "basic",
+                "email",
+                "microprofile-jwt",
+                "offline_access",
+                "phone",
+                "profile",
+                "roles",
+
+                readDocumentScope.getName(),
+                createDocumentScope.getName(),
+                updateDocumentScope.getName(),
+                deleteDocumentScope.getName()
+        ));
 
         return k8sClient.resource(realmImport)
                 .inNamespace(cr.getMetadata().getNamespace())
@@ -193,7 +249,7 @@ public class KeycloakRealm {
 
     private RealmRepresentation getDefaultRealm() {
         try {
-            InputStream defaultRealmInputStream = KeycloakRealm.class.getClassLoader().getResourceAsStream("default-realm.json");
+            InputStream defaultRealmInputStream = KeycloakRealm.class.getClassLoader().getResourceAsStream("realm.json");
             ObjectReader objectReader = objectMapper.readerFor(RealmRepresentation.class);
             return objectReader.readValue(defaultRealmInputStream);
         } catch (IOException e) {

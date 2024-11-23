@@ -14,7 +14,6 @@ import org.trustify.operator.Config;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.realmimport.KeycloakRealmImport;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakRealm;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakServer;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerDeployment;
@@ -216,7 +215,7 @@ public class UIDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
                                 providerEnvs = List.of(
                                         new EnvVarBuilder()
                                                 .withName("OIDC_CLIENT_ID")
-                                                .withValue(KeycloakRealm.getFrontendClientName(cr))
+                                                .withValue(KeycloakRealm.getUIClientName(cr))
                                                 .build(),
                                         new EnvVarBuilder()
                                                 .withName("OIDC_SERVER_URL")

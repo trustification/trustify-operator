@@ -1,5 +1,6 @@
 package org.trustify.operator.controllers;
 
+import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
@@ -23,10 +24,7 @@ import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakOperator;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakRealm;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakServer;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.utils.KeycloakUtils;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerDeployment;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerStoragePersistentVolumeClaim;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerStoragePersistentVolumeClaimActivationCondition;
+import org.trustify.operator.cdrs.v2alpha1.server.*;
 import org.trustify.operator.cdrs.v2alpha1.ui.UIDeployment;
 import org.trustify.operator.cdrs.v2alpha1.ui.UIIngress;
 import org.trustify.operator.cdrs.v2alpha1.ui.UIService;
@@ -96,6 +94,11 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
                 ),
 
                 @Dependent(
+                        name = "server-configmap",
+                        type = ServerConfigurationConfigMap.class,
+                        activationCondition = ServerConfigurationConfigMapActivationCondition.class
+                ),
+                @Dependent(
                         name = "server-pvc",
                         type = ServerStoragePersistentVolumeClaim.class,
                         activationCondition = ServerStoragePersistentVolumeClaimActivationCondition.class
@@ -131,6 +134,7 @@ public class TrustifyReconciler implements Reconciler<Trustify>, Cleaner<Trustif
 
     private static final Logger logger = Logger.getLogger(TrustifyReconciler.class);
 
+    public static final String CONFIG_MAP_EVENT_SOURCE = "configMapSource";
     public static final String PVC_EVENT_SOURCE = "pcvSource";
     public static final String SECRET_EVENT_SOURCE = "secretSource";
     public static final String DEPLOYMENT_EVENT_SOURCE = "deploymentSource";
@@ -253,17 +257,20 @@ public class TrustifyReconciler implements Reconciler<Trustify>, Cleaner<Trustif
 
     @Override
     public Map<String, EventSource> prepareEventSources(EventSourceContext<Trustify> context) {
+        var configMapInformerConfiguration = InformerConfiguration.from(ConfigMap.class, context).build();
         var pcvInformerConfiguration = InformerConfiguration.from(PersistentVolumeClaim.class, context).build();
         var secretInformerConfiguration = InformerConfiguration.from(Secret.class, context).build();
         var deploymentInformerConfiguration = InformerConfiguration.from(Deployment.class, context).build();
         var serviceInformerConfiguration = InformerConfiguration.from(Service.class, context).build();
 
+        var configMapInformerConfigurationInformerEventSource = new InformerEventSource<>(configMapInformerConfiguration, context);
         var pcvInformerEventSource = new InformerEventSource<>(pcvInformerConfiguration, context);
         var secretInformerEventSource = new InformerEventSource<>(secretInformerConfiguration, context);
         var deploymentInformerEventSource = new InformerEventSource<>(deploymentInformerConfiguration, context);
         var serviceInformerEventSource = new InformerEventSource<>(serviceInformerConfiguration, context);
 
         return Map.of(
+                CONFIG_MAP_EVENT_SOURCE, configMapInformerConfigurationInformerEventSource,
                 PVC_EVENT_SOURCE, pcvInformerEventSource,
                 SECRET_EVENT_SOURCE, secretInformerEventSource,
                 DEPLOYMENT_EVENT_SOURCE, deploymentInformerEventSource,

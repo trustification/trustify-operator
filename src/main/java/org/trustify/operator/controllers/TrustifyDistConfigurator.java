@@ -9,6 +9,8 @@ import org.trustify.operator.cdrs.v2alpha1.db.DBDeployment;
 import org.trustify.operator.cdrs.v2alpha1.db.DBService;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakRealm;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakServer;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.utils.KeycloakUtils;
+import org.trustify.operator.cdrs.v2alpha1.server.ServerConfigurationConfigMap;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerStoragePersistentVolumeClaim;
 
@@ -182,15 +184,37 @@ public class TrustifyDistConfigurator {
     }
 
     private void configureOidc() {
-        List<EnvVar> envVars = Optional.ofNullable(cr.getSpec().oidcSpec())
-                .map(oidcSpec -> {
+        Optional.ofNullable(cr.getSpec().oidcSpec())
+                .ifPresentOrElse((oidcSpec) -> {
                     if (oidcSpec.enabled()) {
+                        // Volumes
+                        var mountPath = "/etc/config/configuration.yaml";
+
+                        var volume = new VolumeBuilder()
+                                .withName("authentication-configuration-pvol")
+                                .withConfigMap(new ConfigMapVolumeSourceBuilder()
+                                        .withName(ServerConfigurationConfigMap.getConfigMapName(cr))
+                                        .withDefaultMode(420)
+                                        .build()
+                                )
+                                .build();
+
+                        var volumeMount = new VolumeMountBuilder()
+                                .withName(volume.getName())
+                                .withMountPath(mountPath)
+                                .withSubPath(ServerConfigurationConfigMap.getConfigMapAuthKey(cr))
+                                .build();
+
+                        allVolumes.add(volume);
+                        allVolumeMounts.add(volumeMount);
+
+                        // Env vars
                         TrustifySpec.OidcProviderType providerType = Objects.nonNull(oidcSpec.type()) ? oidcSpec.type() : TrustifySpec.OidcProviderType.EMBEDDED;
 
-                        List<EnvVar> providerEnvs;
+                        List<EnvVar> envVars;
                         switch (providerType) {
                             case EXTERNAL -> {
-                                providerEnvs = Optional.ofNullable(oidcSpec.externalOidcSpec())
+                                envVars = Optional.ofNullable(oidcSpec.externalOidcSpec())
                                         .map(externalOidcSpec -> optionMapper(externalOidcSpec)
                                                 .mapOption("AUTHENTICATOR_OIDC_ISSUER_URL", TrustifySpec.ExternalOidcSpec::serverUrl)
                                                 .mapOption("AUTHENTICATOR_OIDC_CLIENT_IDS", TrustifySpec.ExternalOidcSpec::serverClientId)
@@ -201,10 +225,10 @@ public class TrustifyDistConfigurator {
                                         .orElseGet(ArrayList::new);
                             }
                             case EMBEDDED -> {
-                                providerEnvs = List.of(
+                                envVars = List.of(
                                         new EnvVarBuilder()
                                                 .withName("AUTHENTICATOR_OIDC_ISSUER_URL")
-                                                .withValue(KeycloakServer.getServiceHost(cr) + KeycloakRealm.getRealmClientPath(cr))
+                                                .withValue(KeycloakUtils.serverUrlWithRealmIncluded(cr))
                                                 .build(),
                                         new EnvVarBuilder()
                                                 .withName("AUTHENTICATOR_OIDC_CLIENT_IDS")
@@ -216,36 +240,36 @@ public class TrustifyDistConfigurator {
                                                 .build(),
                                         new EnvVarBuilder()
                                                 .withName("UI_CLIENT_ID")
-                                                .withValue(KeycloakRealm.getFrontendClientName(cr))
+                                                .withValue(KeycloakRealm.getUIClientName(cr))
                                                 .build()
                                 );
                             }
-                            default -> providerEnvs = Collections.emptyList();
+                            default -> envVars = Collections.emptyList();
                         }
 
-                        List<EnvVar> result = new ArrayList<>();
-                        result.add(new EnvVarBuilder()
+                        allEnvVars.add(new EnvVarBuilder()
                                 .withName("AUTH_DISABLED")
                                 .withValue(Boolean.FALSE.toString())
                                 .build()
                         );
-                        result.addAll(providerEnvs);
-                        return result;
+                        allEnvVars.add(new EnvVarBuilder()
+                                .withName("AUTH_CONFIGURATION")
+                                .withValue(mountPath)
+                                .build()
+                        );
+//                        allEnvVars.addAll(envVars);
                     } else {
-                        return List.of(new EnvVarBuilder()
+                        allEnvVars.add(new EnvVarBuilder()
                                 .withName("AUTH_DISABLED")
                                 .withValue(Boolean.TRUE.toString())
                                 .build()
                         );
                     }
-                })
-                .orElseGet(() -> List.of(new EnvVarBuilder()
+                }, () -> allEnvVars.add(new EnvVarBuilder()
                         .withName("AUTH_DISABLED")
                         .withValue(Boolean.TRUE.toString())
-                        .build())
-                );
-
-        allEnvVars.addAll(envVars);
+                        .build()
+                ));
     }
 
     private <T> OptionMapper<T> optionMapper(T optionSpec) {

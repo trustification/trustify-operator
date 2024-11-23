@@ -47,6 +47,7 @@ public class Constants {
     public static final String UI_DEPLOYMENT_SUFFIX = "-" + TRUSTI_UI_NAME + "-deployment";
     public static final String UI_SERVICE_SUFFIX = "-" + TRUSTI_UI_NAME + "-service";
 
+    public static final String SERVER_CONFIG_MAP_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-configmap";
     public static final String SERVER_PVC_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-pvc";
     public static final String SERVER_DEPLOYMENT_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-deployment";
     public static final String SERVER_SERVICE_SUFFIX = "-" + TRUSTI_SERVER_NAME + "-service";
