@@ -21,7 +21,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
-public class KeycloakRealm {
+public class KeycloakRealmService {
 
     @Inject
     KubernetesClient k8sClient;
@@ -53,7 +53,7 @@ public class KeycloakRealm {
     }
 
     public static String getRealmClientPath(Trustify cr) {
-        return String.format("%s/realms/%s", KeycloakServer.RELATIVE_PATH, KeycloakRealm.getRealmName(cr));
+        return String.format("%s/realms/%s", KeycloakServerService.RELATIVE_PATH, KeycloakRealmService.getRealmName(cr));
     }
 
     public Optional<KeycloakRealmImport> getCurrentInstance(Trustify cr) {
@@ -72,7 +72,7 @@ public class KeycloakRealm {
         realmImport.setSpec(new KeycloakRealmImportSpec());
 
         KeycloakRealmImportSpec spec = realmImport.getSpec();
-        spec.setKeycloakCRName(KeycloakServer.getKeycloakName(cr));
+        spec.setKeycloakCRName(KeycloakServerService.getKeycloakName(cr));
 
         // Realm
         spec.setRealm(getDefaultRealm());
@@ -87,13 +87,11 @@ public class KeycloakRealm {
             realmRepresentation.getRoles().setRealm(new ArrayList<>());
         }
 
-        RoleRepresentation chickenUserRole = new RoleRepresentation("chicken-user", "User of the application", false);
-        RoleRepresentation chickenManagerRole = new RoleRepresentation("chicken-manager", "User of the application", false);
-        RoleRepresentation chickenAdminRole = new RoleRepresentation("chicken-admin", "Admin of the application", false);
+        RoleRepresentation userRole = new RoleRepresentation("user", "User of the application", false);
+        RoleRepresentation adminRole = new RoleRepresentation("admin", "Admin of the application", false);
         realmRepresentation.getRoles().setRealm(List.of(
-                chickenUserRole,
-                chickenManagerRole,
-                chickenAdminRole
+                userRole,
+                adminRole
         ));
 
         // Scopes
@@ -123,10 +121,10 @@ public class KeycloakRealm {
                     );
         };
 
-//        applyRolesToScope.accept(readDocumentScope, List.of(chickenManagerRole, chickenUserRole));
-        applyRolesToScope.accept(createDocumentScope, List.of(chickenManagerRole));
-//        applyRolesToScope.accept(updateDocumentScope, List.of(chickenManagerRole));
-        applyRolesToScope.accept(deleteDocumentScope, List.of(chickenManagerRole));
+        applyRolesToScope.accept(readDocumentScope, List.of(adminRole, userRole));
+        applyRolesToScope.accept(createDocumentScope, List.of(adminRole));
+        applyRolesToScope.accept(updateDocumentScope, List.of(adminRole));
+        applyRolesToScope.accept(deleteDocumentScope, List.of(adminRole));
 
         // Users
         UserRepresentation developerUser = new UserRepresentation();
@@ -146,7 +144,7 @@ public class KeycloakRealm {
                 "default-roles-trustify",
                 "offline_access",
                 "uma_authorization",
-                chickenUserRole.getName())
+                userRole.getName())
         );
 
         CredentialRepresentation developerCredentials = new CredentialRepresentation();
@@ -166,9 +164,7 @@ public class KeycloakRealm {
                 "default-roles-trustify",
                 "offline_access",
                 "uma_authorization",
-                chickenUserRole.getName(),
-                chickenManagerRole.getName(),
-                chickenAdminRole.getName()
+                adminRole.getName()
         ));
 
         CredentialRepresentation adminCredentials = new CredentialRepresentation();
@@ -196,6 +192,7 @@ public class KeycloakRealm {
         uiClient.setRedirectUris(List.of("*"));
         uiClient.setWebOrigins(List.of("*"));
         uiClient.setPublicClient(true);
+        uiClient.setFullScopeAllowed(true);
 
         uiClient.setDefaultClientScopes(List.of(
                 "acr",
@@ -249,7 +246,7 @@ public class KeycloakRealm {
 
     private RealmRepresentation getDefaultRealm() {
         try {
-            InputStream defaultRealmInputStream = KeycloakRealm.class.getClassLoader().getResourceAsStream("realm.json");
+            InputStream defaultRealmInputStream = KeycloakRealmService.class.getClassLoader().getResourceAsStream("realm.json");
             ObjectReader objectReader = objectMapper.readerFor(RealmRepresentation.class);
             return objectReader.readValue(defaultRealmInputStream);
         } catch (IOException e) {

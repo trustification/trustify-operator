@@ -9,7 +9,7 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 import jakarta.enterprise.context.ApplicationScoped;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakRealm;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakRealmService;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.utils.KeycloakUtils;
 import org.trustify.operator.cdrs.v2alpha1.server.templates.ConfigurationTemplate;
 import org.trustify.operator.utils.CRDUtils;
@@ -36,8 +36,8 @@ public class ServerConfigurationConfigMap extends CRUDKubernetesDependentResourc
     private ConfigMap newConfigMap(Trustify cr, Context<Trustify> context) {
         ConfigurationTemplate.Data data = new ConfigurationTemplate.Data(
                 KeycloakUtils.serverUrlWithRealmIncluded(cr),
-                KeycloakRealm.getUIClientName(cr),
-                KeycloakRealm.getBackendClientName(cr)
+                KeycloakRealmService.getUIClientName(cr),
+                KeycloakRealmService.getBackendClientName(cr)
         );
         String yamlFile = ConfigurationTemplate.configuration(data).render();
 

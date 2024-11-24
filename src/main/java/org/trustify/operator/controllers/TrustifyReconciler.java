@@ -13,16 +13,16 @@ import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 import io.javaoperatorsdk.operator.processing.event.source.informer.InformerEventSource;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
+import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifyStatusCondition;
 import org.trustify.operator.cdrs.v2alpha1.db.*;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.*;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.deployment.Keycloak;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.realmimport.KeycloakRealmImport;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.realmimport.KeycloakRealmImportStatusCondition;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakOperator;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakRealm;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakServer;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakOperatorService;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakRealmService;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakServerService;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.utils.KeycloakUtils;
 import org.trustify.operator.cdrs.v2alpha1.server.*;
 import org.trustify.operator.cdrs.v2alpha1.ui.UIDeployment;
@@ -32,7 +32,6 @@ import org.trustify.operator.cdrs.v2alpha1.ui.UIService;
 import java.time.Duration;
 import java.util.AbstractMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -103,9 +102,12 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
                         type = ServerStoragePersistentVolumeClaim.class,
                         activationCondition = ServerStoragePersistentVolumeClaimActivationCondition.class
                 ),
+
                 @Dependent(
                         name = "server-deployment",
                         type = ServerDeployment.class,
+                        dependsOn = {"ui-ingress"},
+                        reconcilePrecondition = ServerDeploymentReconcilePreCondition.class,
                         readyPostcondition = ServerDeployment.class
                 ),
                 @Dependent(
@@ -144,13 +146,13 @@ public class TrustifyReconciler implements Reconciler<Trustify>, Cleaner<Trustif
     KubernetesClient k8sClient;
 
     @Inject
-    KeycloakOperator keycloakOperator;
+    KeycloakOperatorService keycloakOperatorService;
 
     @Inject
-    KeycloakServer keycloakServer;
+    KeycloakServerService keycloakServerService;
 
     @Inject
-    KeycloakRealm keycloakRealm;
+    KeycloakRealmService keycloakRealmService;
 
     @Override
     public void initContext(Trustify cr, Context<Trustify> context) {
@@ -160,7 +162,10 @@ public class TrustifyReconciler implements Reconciler<Trustify>, Cleaner<Trustif
                 "app.kubernetes.io/part-of", cr.getMetadata().getName(),
                 "trustify-operator/cluster", org.trustify.operator.Constants.TRUSTI_NAME
         );
-        context.managedDependentResourceContext().put(org.trustify.operator.Constants.CONTEXT_LABELS_KEY, labels);
+        context.managedDependentResourceContext().put(Constants.CONTEXT_LABELS_KEY, labels);
+        context.managedDependentResourceContext().put(Constants.CONTEXT_KUBERNETES_CLIENT_KEY, k8sClient);
+        context.managedDependentResourceContext().put(Constants.CONTEXT_KEYCLOAK_SERVER_SERVICE_KEY, keycloakServerService);
+        context.managedDependentResourceContext().put(Constants.CONTEXT_KEYCLOAK_REALM_SERVICE_KEY, keycloakRealmService);
     }
 
     @Override
@@ -171,8 +176,8 @@ public class TrustifyReconciler implements Reconciler<Trustify>, Cleaner<Trustif
 
     @Override
     public DeleteControl cleanup(Trustify cr, Context<Trustify> context) {
-        keycloakRealm.cleanupDependentResources(cr);
-        keycloakServer.cleanupDependentResources(cr);
+        keycloakRealmService.cleanupDependentResources(cr);
+        keycloakServerService.cleanupDependentResources(cr);
 
         return DeleteControl.defaultDelete();
     }
@@ -181,41 +186,37 @@ public class TrustifyReconciler implements Reconciler<Trustify>, Cleaner<Trustif
         boolean isKcRequired = KeycloakUtils.isKeycloakRequired(cr);
         if (isKcRequired) {
             // Keycloak Operator
-            boolean kcSubscriptionExists = keycloakOperator.subscriptionExists(cr);
+            boolean kcSubscriptionExists = keycloakOperatorService.subscriptionExists(cr);
             if (!kcSubscriptionExists) {
                 logger.info("Installing Keycloak Operator");
-                keycloakOperator.createSubscription(cr);
+                keycloakOperatorService.createSubscription(cr);
             }
 
-            AbstractMap.SimpleEntry<Boolean, String> subscriptionReady = keycloakOperator.isSubscriptionReady(cr);
+            AbstractMap.SimpleEntry<Boolean, String> subscriptionReady = keycloakOperatorService.isSubscriptionReady(cr);
             if (!subscriptionReady.getKey()) {
                 logger.infof("Waiting for the Keycloak Operator to be ready: %s", subscriptionReady.getValue());
                 return Optional.of(UpdateControl.<Trustify>noUpdate().rescheduleAfter(5, TimeUnit.SECONDS));
             }
 
             // Keycloak Server
-            Keycloak kcInstance = keycloakServer.getCurrentInstance(cr)
+            Keycloak kcInstance = keycloakServerService.getCurrentInstance(cr)
                     .orElseGet(() -> {
                         logger.info("Creating a Keycloak Server");
-                        return keycloakServer.initInstance(cr);
+                        return keycloakServerService.initInstance(cr);
                     });
-            boolean isKcInstanceReady = kcInstance.getStatus() != null && kcInstance.getStatus()
-                    .getConditions().stream()
-                    .anyMatch(condition -> Objects.equals(condition.getType(), "Ready") && Objects.equals(condition.getStatus(), true));
+            boolean isKcInstanceReady = KeycloakUtils.isKeycloakServerReady(kcInstance);
             if (!isKcInstanceReady) {
                 logger.info("Waiting for the Keycloak Server to be ready");
                 return Optional.of(UpdateControl.<Trustify>noUpdate().rescheduleAfter(5, TimeUnit.SECONDS));
             }
 
             // Keycloak Realm
-            KeycloakRealmImport realmImportInstance = keycloakRealm.getCurrentInstance(cr)
+            KeycloakRealmImport realmImportInstance = keycloakRealmService.getCurrentInstance(cr)
                     .orElseGet(() -> {
                         logger.info("Creating a KeycloakRealmImport");
-                        return keycloakRealm.initInstance(cr);
+                        return keycloakRealmService.initInstance(cr);
                     });
-            boolean isRealmImportInstanceReady = realmImportInstance.getStatus() != null && realmImportInstance.getStatus()
-                    .getConditions().stream()
-                    .anyMatch(condition -> Objects.equals(condition.getType(), KeycloakRealmImportStatusCondition.DONE) && Objects.equals(condition.getStatus(), true));
+            boolean isRealmImportInstanceReady = KeycloakUtils.isKeycloakRealmImportReady(realmImportInstance);
             if (!isRealmImportInstanceReady) {
                 logger.info("Waiting for the KeycloakRealmImport to be ready");
                 return Optional.of(UpdateControl.<Trustify>noUpdate().rescheduleAfter(5, TimeUnit.SECONDS));

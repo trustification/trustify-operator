@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 @ApplicationScoped
-public class KeycloakServer {
+public class KeycloakServerService {
 
     public static final String RELATIVE_PATH = "/auth";
 

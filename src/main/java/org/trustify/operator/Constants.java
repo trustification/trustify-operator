@@ -7,6 +7,9 @@ public class Constants {
     public static final String CRDS_VERSION = "v1alpha1";
 
     public static final String CONTEXT_LABELS_KEY = "labels";
+    public static final String CONTEXT_KUBERNETES_CLIENT_KEY = "kubernetesClient";
+    public static final String CONTEXT_KEYCLOAK_SERVER_SERVICE_KEY = "keycloakServerService";
+    public static final String CONTEXT_KEYCLOAK_REALM_SERVICE_KEY = "keycloakRealmService";
 
     //
     public static final String TRUSTI_NAME = "trustify";

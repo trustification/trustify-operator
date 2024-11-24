@@ -12,7 +12,7 @@ import java.util.AbstractMap;
 import java.util.Objects;
 
 @ApplicationScoped
-public class KeycloakOperator {
+public class KeycloakOperatorService {
 
     @Inject
     KubernetesClient k8sClient;

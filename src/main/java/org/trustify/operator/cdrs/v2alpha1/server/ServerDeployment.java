@@ -34,13 +34,15 @@ public class ServerDeployment extends CRUDKubernetesDependentResource<Deployment
     @Inject
     Config config;
 
+    @Inject
+    TrustifyDistConfigurator distConfigurator;
+
     public ServerDeployment() {
         super(Deployment.class);
     }
 
     @Override
     protected Deployment desired(Trustify cr, Context<Trustify> context) {
-        TrustifyDistConfigurator distConfigurator = new TrustifyDistConfigurator(cr);
         return newDeployment(cr, context, distConfigurator);
     }
 
@@ -101,9 +103,10 @@ public class ServerDeployment extends CRUDKubernetesDependentResource<Deployment
         String image = Optional.ofNullable(cr.getSpec().serverImage()).orElse(config.serverImage());
         String imagePullPolicy = Optional.ofNullable(cr.getSpec().imagePullPolicy()).orElse(config.imagePullPolicy());
 
-        List<EnvVar> envVars = distConfigurator.getAllEnvVars();
-        List<Volume> volumes = distConfigurator.getAllVolumes();
-        List<VolumeMount> volumeMounts = distConfigurator.getAllVolumeMounts();
+        TrustifyDistConfigurator.Config distConfig = distConfigurator.configureDistOption(cr);
+        List<EnvVar> envVars = distConfig.allEnvVars();
+        List<Volume> volumes = distConfig.allVolumes();
+        List<VolumeMount> volumeMounts = distConfig.allVolumeMounts();
 
         TrustifySpec.ResourcesLimitSpec resourcesLimitSpec = CRDUtils.getValueFromSubSpec(cr.getSpec(), TrustifySpec::serverResourceLimitSpec)
                 .orElse(null);
@@ -136,7 +139,9 @@ public class ServerDeployment extends CRUDKubernetesDependentResource<Deployment
                                         .withImagePullPolicy(imagePullPolicy)
                                         .withEnv(envVars)
                                         .withCommand(
-                                                "/usr/local/bin/trustd",
+                                                "/usr/local/bin/trustd"
+                                        )
+                                        .withArgs(
                                                 "db",
                                                 "migrate"
                                         )
@@ -148,11 +153,11 @@ public class ServerDeployment extends CRUDKubernetesDependentResource<Deployment
                                         .withImagePullPolicy(imagePullPolicy)
                                         .withEnv(envVars)
                                         .withCommand(
-                                                "/usr/local/bin/trustd",
+                                                "/usr/local/bin/trustd"
+                                        )
+                                        .withArgs(
                                                 "api",
-                                                "--sample-data",
-                                                "--infrastructure-enabled",
-                                                "--infrastructure-bind=0.0.0.0:" + Constants.HTTP_INFRAESTRUCTURE_PORT
+                                                "--sample-data"
                                         )
                                         .withPorts(
                                                 new ContainerPortBuilder()

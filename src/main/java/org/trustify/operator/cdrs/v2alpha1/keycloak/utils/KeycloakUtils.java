@@ -5,8 +5,11 @@ import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakRealm;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakServer;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.deployment.Keycloak;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.realmimport.KeycloakRealmImport;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.realmimport.KeycloakRealmImportStatusCondition;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakRealmService;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakServerService;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -25,7 +28,23 @@ public class KeycloakUtils {
     }
 
     public static String serverUrlWithRealmIncluded(Trustify cr) {
-        return KeycloakServer.getServiceHost(cr) + KeycloakRealm.getRealmClientPath(cr);
+        return KeycloakServerService.getServiceHost(cr) + KeycloakRealmService.getRealmClientPath(cr);
+    }
+
+    public static String serverUrlWithRealmIncluded(String url, Trustify cr) {
+        return url + KeycloakRealmService.getRealmClientPath(cr);
+    }
+
+    public static boolean isKeycloakServerReady(Keycloak kcInstance) {
+        return kcInstance.getStatus() != null && kcInstance.getStatus()
+                .getConditions().stream()
+                .anyMatch(condition -> Objects.equals(condition.getType(), "Ready") && Objects.equals(condition.getStatus(), true));
+    }
+
+    public static boolean isKeycloakRealmImportReady(KeycloakRealmImport realmImportInstance) {
+        return realmImportInstance.getStatus() != null && realmImportInstance.getStatus()
+                .getConditions().stream()
+                .anyMatch(condition -> Objects.equals(condition.getType(), KeycloakRealmImportStatusCondition.DONE) && Objects.equals(condition.getStatus(), true));
     }
 
     public static KeyPair generateKeyPair() {

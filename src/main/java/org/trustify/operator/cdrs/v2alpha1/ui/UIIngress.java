@@ -22,7 +22,6 @@ public class UIIngress extends UIIngressBase {
     public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=ui,component-variant=https";
 
     @Override
-    @SuppressWarnings("unchecked")
     protected Ingress desired(Trustify cr, Context<Trustify> context) {
         return newIngress(
                 cr,

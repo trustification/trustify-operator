@@ -14,8 +14,8 @@ import org.trustify.operator.Config;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakRealm;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakServer;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakRealmService;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakServerService;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerDeployment;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
 import org.trustify.operator.utils.CRDUtils;
@@ -215,11 +215,11 @@ public class UIDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
                                 providerEnvs = List.of(
                                         new EnvVarBuilder()
                                                 .withName("OIDC_CLIENT_ID")
-                                                .withValue(KeycloakRealm.getUIClientName(cr))
+                                                .withValue(KeycloakRealmService.getUIClientName(cr))
                                                 .build(),
                                         new EnvVarBuilder()
                                                 .withName("OIDC_SERVER_URL")
-                                                .withValue(KeycloakServer.getServiceHost(cr))
+                                                .withValue(KeycloakServerService.getServiceHost(cr))
                                                 .build(),
                                         new EnvVarBuilder()
                                                 .withName("OIDC_SERVER_IS_EMBEDDED")
@@ -227,7 +227,7 @@ public class UIDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
                                                 .build(),
                                         new EnvVarBuilder()
                                                 .withName("OIDC_SERVER_EMBEDDED_PATH")
-                                                .withValue(String.format("/auth/realms/%s", KeycloakRealm.getRealmName(cr)))
+                                                .withValue(String.format("/auth/realms/%s", KeycloakRealmService.getRealmName(cr)))
                                                 .build()
                                 );
                             }
