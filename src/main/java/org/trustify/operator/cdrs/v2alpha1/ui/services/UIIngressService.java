@@ -2,6 +2,7 @@ package org.trustify.operator.cdrs.v2alpha1.ui.services;
 
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.api.model.networking.v1.IngressLoadBalancerIngress;
+import io.fabric8.kubernetes.api.model.networking.v1.IngressRule;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -21,6 +22,18 @@ public class UIIngressService {
                 .inNamespace(cr.getMetadata().getNamespace())
                 .withName(UIIngress.getIngressName(cr))
                 .get();
+
+        // Openshift: Find Host if exists
+        Optional<String> ingressHost = Optional.ofNullable(nullableIngress)
+                .flatMap(ingress -> Optional.ofNullable(ingress.getSpec()))
+                .flatMap(ingressSpec -> Optional.ofNullable(ingressSpec.getRules()))
+                .flatMap(ingressRules -> ingressRules.stream().findFirst())
+                .map(IngressRule::getHost);
+        if (ingressHost.isPresent()) {
+            return ingressHost;
+        }
+
+        // Minikube: Find IP if exists
         return Optional.ofNullable(nullableIngress)
                 .flatMap(ingress -> Optional.ofNullable(ingress.getStatus()))
                 .flatMap(status -> Optional.ofNullable(status.getLoadBalancer()))

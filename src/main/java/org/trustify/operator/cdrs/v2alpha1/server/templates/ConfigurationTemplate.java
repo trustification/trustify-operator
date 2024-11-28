@@ -7,7 +7,8 @@ import io.quarkus.qute.TemplateInstance;
 public class ConfigurationTemplate {
 
     public record Data(
-            String serverUrl,
+            String internalServerUrl,
+            String externalServerUrl,
             String uiClientId,
             String backendClientId
     ) {

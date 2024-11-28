@@ -26,8 +26,8 @@ public class KeycloakOperatorService {
                 .withNewSpec()
                 .withChannel("fast")
                 .withName("keycloak-operator")
-                .withSource("operatorhubio-catalog")
-                .withSourceNamespace("olm")
+                .withSource("community-operators")
+                .withSourceNamespace("openshift-marketplace")
                 .endSpec()
                 .build();
     }

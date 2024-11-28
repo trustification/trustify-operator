@@ -16,6 +16,8 @@ import org.jboss.logging.Logger;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifyStatusCondition;
+import org.trustify.operator.cdrs.v2alpha1.common.CommonConfigMap;
+import org.trustify.operator.cdrs.v2alpha1.common.CommonConfigMapActivationCondition;
 import org.trustify.operator.cdrs.v2alpha1.db.*;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.*;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.deployment.Keycloak;
@@ -28,6 +30,7 @@ import org.trustify.operator.cdrs.v2alpha1.server.*;
 import org.trustify.operator.cdrs.v2alpha1.ui.UIDeployment;
 import org.trustify.operator.cdrs.v2alpha1.ui.UIIngress;
 import org.trustify.operator.cdrs.v2alpha1.ui.UIService;
+import org.trustify.operator.cdrs.v2alpha1.ui.services.UIIngressService;
 
 import java.time.Duration;
 import java.util.AbstractMap;
@@ -41,6 +44,12 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
         namespaces = WATCH_CURRENT_NAMESPACE,
         name = "trustify",
         dependents = {
+                @Dependent(
+                        name = "common-configmap",
+                        type = CommonConfigMap.class,
+                        activationCondition = CommonConfigMapActivationCondition.class
+                ),
+
                 @Dependent(
                         name = "keycloak-tls-secret",
                         type = KeycloakHttpTlsSecret.class,
@@ -95,6 +104,7 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
                 @Dependent(
                         name = "server-configmap",
                         type = ServerConfigurationConfigMap.class,
+                        dependsOn = {"ui-ingress"},
                         activationCondition = ServerConfigurationConfigMapActivationCondition.class
                 ),
                 @Dependent(
@@ -106,7 +116,7 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
                 @Dependent(
                         name = "server-deployment",
                         type = ServerDeployment.class,
-                        dependsOn = {"ui-ingress"},
+//                        dependsOn = {"server-configmap"},
                         reconcilePrecondition = ServerDeploymentReconcilePreCondition.class,
                         readyPostcondition = ServerDeployment.class
                 ),
@@ -154,8 +164,16 @@ public class TrustifyReconciler implements Reconciler<Trustify>, Cleaner<Trustif
     @Inject
     KeycloakRealmService keycloakRealmService;
 
+    @Inject
+    UIIngressService ingressService;
+
     @Override
     public void initContext(Trustify cr, Context<Trustify> context) {
+        // Default Cert
+        Optional<String> certsDefault = extractOpenshiftRouterCertsDefault(cr, context);
+        context.managedDependentResourceContext().put(Constants.CONTEXT_CERTS_DEFAULT_KEY, certsDefault);
+
+        // Labels
         final var labels = Map.of(
                 "app.kubernetes.io/managed-by", "trustify-operator",
                 "app.kubernetes.io/name", cr.getMetadata().getName(),
@@ -163,9 +181,22 @@ public class TrustifyReconciler implements Reconciler<Trustify>, Cleaner<Trustif
                 "trustify-operator/cluster", org.trustify.operator.Constants.TRUSTI_NAME
         );
         context.managedDependentResourceContext().put(Constants.CONTEXT_LABELS_KEY, labels);
+
+        // Services
+        context.managedDependentResourceContext().put(Constants.CONTEXT_INGRESS_SERVICE_KEY, ingressService);
         context.managedDependentResourceContext().put(Constants.CONTEXT_KUBERNETES_CLIENT_KEY, k8sClient);
         context.managedDependentResourceContext().put(Constants.CONTEXT_KEYCLOAK_SERVER_SERVICE_KEY, keycloakServerService);
         context.managedDependentResourceContext().put(Constants.CONTEXT_KEYCLOAK_REALM_SERVICE_KEY, keycloakRealmService);
+    }
+
+    private Optional<String> extractOpenshiftRouterCertsDefault(Trustify cr, Context<Trustify> context) {
+        Secret nullableSecret = k8sClient.resources(Secret.class)
+                .inNamespace("openshift-ingress")
+                .withName("router-certs-default")
+                .get();
+        return Optional.ofNullable(nullableSecret)
+                .flatMap(secret -> Optional.ofNullable(secret.getData()))
+                .map(data -> data.get("tls.crt"));
     }
 
     @Override

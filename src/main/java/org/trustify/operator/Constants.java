@@ -6,13 +6,16 @@ public class Constants {
     public static final String CRDS_GROUP = "org.trustify";
     public static final String CRDS_VERSION = "v1alpha1";
 
+    public static final String CONTEXT_CERTS_DEFAULT_KEY = "certsDefaultKey";
     public static final String CONTEXT_LABELS_KEY = "labels";
+    public static final String CONTEXT_INGRESS_SERVICE_KEY = "ingressService";
     public static final String CONTEXT_KUBERNETES_CLIENT_KEY = "kubernetesClient";
     public static final String CONTEXT_KEYCLOAK_SERVER_SERVICE_KEY = "keycloakServerService";
     public static final String CONTEXT_KEYCLOAK_REALM_SERVICE_KEY = "keycloakRealmService";
 
     //
     public static final String TRUSTI_NAME = "trustify";
+    public static final String TRUSTI_COMMON_NAME = "trustify-common";
     public static final String TRUSTI_UI_NAME = "trustify-ui";
     public static final String TRUSTI_SERVER_NAME = "trustify-server";
     public static final String TRUSTI_DB_NAME = "trustify-db";
@@ -42,6 +45,8 @@ public class Constants {
     public static final String SERVICE_PROTOCOL = "TCP";
 
     //
+    public static final String COMMON_CLUSTER_CERT_CONFIG_MAP_SUFFIX = "-" + TRUSTI_COMMON_NAME + "-configmap";
+
     public static final String DB_PVC_SUFFIX = "-" + TRUSTI_DB_NAME + "-pvc";
     public static final String DB_SECRET_SUFFIX = "-" + TRUSTI_DB_NAME + "-secret";
     public static final String DB_DEPLOYMENT_SUFFIX = "-" + TRUSTI_DB_NAME + "-deployment";

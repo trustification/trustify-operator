@@ -15,7 +15,7 @@ import java.util.Optional;
 public class K3sResource implements QuarkusTestResourceLifecycleManager {
     private static final Logger logger = Logger.getLogger(K3sConfigProducer.class);
 
-    static K3sContainer k3sContainer;
+    private static volatile ThreadLocal<K3sContainer> k3sContainer = new ThreadLocal<>();
 
     // If ENV HOST_KUBERNETES_CONFIG_FILE is set then use the host k8s config
     public static final String HOST_KUBERNETES_CONFIG_FILE = "HOST_KUBERNETES_CONFIG_FILE";
@@ -41,10 +41,12 @@ public class K3sResource implements QuarkusTestResourceLifecycleManager {
             String rancherVersion = Optional.ofNullable(System.getenv(KUBERNETES_VERSION)).orElse("latest");
             logger.info("Using rancher/k3s:" + rancherVersion);
 
-            k3sContainer = new K3sContainer(DockerImageName.parse("rancher/k3s:" + rancherVersion));
-            k3sContainer.start();
+            K3sContainer container = new K3sContainer(DockerImageName.parse("rancher/k3s:" + rancherVersion));
+            k3sContainer.set(container);
 
-            kubeConfigYaml = k3sContainer.getKubeConfigYaml();
+            container.start();
+
+            kubeConfigYaml = container.getKubeConfigYaml();
         }
 
         result.put("kubeConfigYaml", kubeConfigYaml);
@@ -53,8 +55,15 @@ public class K3sResource implements QuarkusTestResourceLifecycleManager {
 
     @Override
     public void stop() {
-        if (k3sContainer != null) {
-            k3sContainer.stop();
+        K3sContainer container = k3sContainer.get();
+        if (container != null) {
+            container.stop();
+            k3sContainer.remove();
         }
     }
+
+    public static K3sContainer getK3sContainer() {
+        return k3sContainer.get();
+    }
+
 }

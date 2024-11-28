@@ -1,4 +1,4 @@
-package org.trustify.operator.cdrs.v2alpha1.server;
+package org.trustify.operator.cdrs.v2alpha1.common;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
@@ -9,22 +9,20 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 import jakarta.enterprise.context.ApplicationScoped;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakRealmService;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.utils.KeycloakUtils;
-import org.trustify.operator.cdrs.v2alpha1.server.templates.ConfigurationTemplate;
-import org.trustify.operator.cdrs.v2alpha1.ui.services.UIIngressService;
 import org.trustify.operator.utils.CRDUtils;
 
+import java.util.Base64;
 import java.util.Map;
+import java.util.Optional;
 
-@KubernetesDependent(labelSelector = ServerConfigurationConfigMap.LABEL_SELECTOR, resourceDiscriminator = ServerConfigurationConfigMapDiscriminator.class)
+@KubernetesDependent(labelSelector = CommonConfigMap.LABEL_SELECTOR, resourceDiscriminator = CommonConfigMapDiscriminator.class)
 @ApplicationScoped
-public class ServerConfigurationConfigMap extends CRUDKubernetesDependentResource<ConfigMap, Trustify>
+public class CommonConfigMap extends CRUDKubernetesDependentResource<ConfigMap, Trustify>
         implements Creator<ConfigMap, Trustify> {
 
-    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=server";
+    public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=common";
 
-    public ServerConfigurationConfigMap() {
+    public CommonConfigMap() {
         super(ConfigMap.class);
     }
 
@@ -35,16 +33,11 @@ public class ServerConfigurationConfigMap extends CRUDKubernetesDependentResourc
 
     @SuppressWarnings("unchecked")
     private ConfigMap newConfigMap(Trustify cr, Context<Trustify> context) {
-        UIIngressService ingressService = context.managedDependentResourceContext()
-                .getMandatory(Constants.CONTEXT_INGRESS_SERVICE_KEY, UIIngressService.class);
+        String cert = (String) context.managedDependentResourceContext()
+                .getMandatory(Constants.CONTEXT_CERTS_DEFAULT_KEY, Optional.class)
+                .orElse("");
 
-        ConfigurationTemplate.Data data = new ConfigurationTemplate.Data(
-                KeycloakUtils.serverUrlWithRealmIncluded(cr),
-                ingressService.getCurrentIngressURL(cr).orElse(""),
-                KeycloakRealmService.getUIClientName(cr),
-                KeycloakRealmService.getBackendClientName(cr)
-        );
-        String yamlFile = ConfigurationTemplate.configuration(data).render();
+        byte[] tlsCert = Base64.getDecoder().decode(cert);
 
         final var labels = (Map<String, String>) context.managedDependentResourceContext()
                 .getMandatory(Constants.CONTEXT_LABELS_KEY, Map.class);
@@ -54,11 +47,11 @@ public class ServerConfigurationConfigMap extends CRUDKubernetesDependentResourc
                 .withName(getConfigMapName(cr))
                 .withNamespace(cr.getMetadata().getNamespace())
                 .withLabels(labels)
-                .addToLabels("component", "server")
+                .addToLabels("component", "common")
                 .withOwnerReferences(CRDUtils.getOwnerReference(cr))
                 .endMetadata()
                 .withData(Map.of(
-                        getConfigMapAuthKey(cr), "\n" + yamlFile
+                        "tls.crt", "\n" + new String(tlsCert)
                 ))
                 .build();
     }
@@ -74,11 +67,11 @@ public class ServerConfigurationConfigMap extends CRUDKubernetesDependentResourc
     }
 
     public static String getConfigMapName(Trustify cr) {
-        return cr.getMetadata().getName() + Constants.SERVER_CONFIG_MAP_SUFFIX;
+        return cr.getMetadata().getName() + Constants.COMMON_CLUSTER_CERT_CONFIG_MAP_SUFFIX;
     }
 
-    public static String getConfigMapAuthKey(Trustify cr) {
-        return "auth.yaml";
+    public static String getConfigMapClusterTlsKey(Trustify cr) {
+        return "tls.crt";
     }
 
 }

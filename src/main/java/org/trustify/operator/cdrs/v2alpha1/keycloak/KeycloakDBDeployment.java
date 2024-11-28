@@ -14,12 +14,10 @@ import org.trustify.operator.Config;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakServerService;
 import org.trustify.operator.utils.CRDUtils;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -74,14 +72,22 @@ public class KeycloakDBDeployment extends CRUDKubernetesDependentResource<Deploy
         final var contextLabels = (Map<String, String>) context.managedDependentResourceContext()
                 .getMandatory(Constants.CONTEXT_LABELS_KEY, Map.class);
 
+        // Remove app.kubernetes.io/part-of
+        Map<String, String> newContextLabels = new HashMap<>(contextLabels);
+        newContextLabels.remove("app.kubernetes.io/part-of");
+
         return new DeploymentBuilder()
                 .withNewMetadata()
                 .withName(getDeploymentName(cr))
                 .withNamespace(cr.getMetadata().getNamespace())
-                .withLabels(contextLabels)
+                .withLabels(newContextLabels)
                 .addToLabels("component", "keycloak")
                 .addToLabels(Map.of(
                         "app.openshift.io/runtime", "postgresql"
+                ))
+                .withAnnotations(Map.of("app.openshift.io/connects-to", """
+                        [{"apiVersion": "apps/v1", "kind":"StatefulSet", "name": "%s"}]
+                        """.formatted(KeycloakServerService.getKeycloakName(cr))
                 ))
                 .withOwnerReferences(CRDUtils.getOwnerReference(cr))
                 .endMetadata()
