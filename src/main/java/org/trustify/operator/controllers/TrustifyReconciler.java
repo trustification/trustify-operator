@@ -104,7 +104,7 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
                 @Dependent(
                         name = "server-configmap",
                         type = ServerConfigurationConfigMap.class,
-                        dependsOn = {"ui-ingress"},
+//                        dependsOn = {"ui-ingress"},
                         activationCondition = ServerConfigurationConfigMapActivationCondition.class
                 ),
                 @Dependent(

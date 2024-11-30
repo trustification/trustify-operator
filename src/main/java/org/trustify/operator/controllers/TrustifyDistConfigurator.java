@@ -7,7 +7,6 @@ import jakarta.inject.Inject;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
-import org.trustify.operator.cdrs.v2alpha1.common.CommonConfigMap;
 import org.trustify.operator.cdrs.v2alpha1.db.DBDeployment;
 import org.trustify.operator.cdrs.v2alpha1.db.DBService;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakRealmService;
@@ -210,23 +209,23 @@ public class TrustifyDistConfigurator {
         Optional.ofNullable(cr.getSpec().oidcSpec())
                 .ifPresentOrElse((oidcSpec) -> {
                     if (oidcSpec.enabled()) {
-                        // Ingress TLS
-                        var ingressTlsMountPath = "/etc/config/ingress-tls.ctr";
-                        var ingressTlsVolume = new VolumeBuilder()
-                                .withName("ingress-tls-pvol")
-                                .withConfigMap(new ConfigMapVolumeSourceBuilder()
-                                        .withName(CommonConfigMap.getConfigMapName(cr))
-                                        .withDefaultMode(420)
-                                        .build()
-                                )
-                                .build();
-                        var ingressTlsVolumeMount = new VolumeMountBuilder()
-                                .withName(ingressTlsVolume.getName())
-                                .withMountPath(ingressTlsMountPath)
-                                .withSubPath(CommonConfigMap.getConfigMapClusterTlsKey(cr))
-                                .build();
-                        config.allVolumes.add(ingressTlsVolume);
-                        config.allVolumeMounts.add(ingressTlsVolumeMount);
+//                        // Ingress TLS
+//                        var ingressTlsMountPath = "/etc/config/ingress-tls.ctr";
+//                        var ingressTlsVolume = new VolumeBuilder()
+//                                .withName("ingress-tls-pvol")
+//                                .withConfigMap(new ConfigMapVolumeSourceBuilder()
+//                                        .withName(CommonConfigMap.getConfigMapName(cr))
+//                                        .withDefaultMode(420)
+//                                        .build()
+//                                )
+//                                .build();
+//                        var ingressTlsVolumeMount = new VolumeMountBuilder()
+//                                .withName(ingressTlsVolume.getName())
+//                                .withMountPath(ingressTlsMountPath)
+//                                .withSubPath(CommonConfigMap.getConfigMapClusterTlsKey(cr))
+//                                .build();
+//                        config.allVolumes.add(ingressTlsVolume);
+//                        config.allVolumeMounts.add(ingressTlsVolumeMount);
 
                         // Volumes
                         var configurationMountPath = "/etc/config/configuration.yaml";

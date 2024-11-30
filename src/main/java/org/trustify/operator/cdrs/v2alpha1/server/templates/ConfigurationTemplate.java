@@ -3,15 +3,15 @@ package org.trustify.operator.cdrs.v2alpha1.server.templates;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateInstance;
 
+import java.util.List;
+
 @CheckedTemplate
 public class ConfigurationTemplate {
 
-    public record Data(
-            String internalServerUrl,
-            String externalServerUrl,
-            String uiClientId,
-            String backendClientId
-    ) {
+    public record Client(String serverUrl, String clientId) {
+    }
+
+    public record Data(List<Client> clients) {
     }
 
     /**

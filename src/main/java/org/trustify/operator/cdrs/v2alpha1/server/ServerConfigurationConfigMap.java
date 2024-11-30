@@ -7,15 +7,18 @@ import io.javaoperatorsdk.operator.processing.dependent.Creator;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.jboss.logging.Logger;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakRealmService;
-import org.trustify.operator.cdrs.v2alpha1.keycloak.utils.KeycloakUtils;
+import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
 import org.trustify.operator.cdrs.v2alpha1.server.templates.ConfigurationTemplate;
-import org.trustify.operator.cdrs.v2alpha1.ui.services.UIIngressService;
 import org.trustify.operator.utils.CRDUtils;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 @KubernetesDependent(labelSelector = ServerConfigurationConfigMap.LABEL_SELECTOR, resourceDiscriminator = ServerConfigurationConfigMapDiscriminator.class)
 @ApplicationScoped
@@ -23,6 +26,8 @@ public class ServerConfigurationConfigMap extends CRUDKubernetesDependentResourc
         implements Creator<ConfigMap, Trustify> {
 
     public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=server";
+
+    private static final Logger logger = Logger.getLogger(ServerConfigurationConfigMap.class);
 
     public ServerConfigurationConfigMap() {
         super(ConfigMap.class);
@@ -35,16 +40,46 @@ public class ServerConfigurationConfigMap extends CRUDKubernetesDependentResourc
 
     @SuppressWarnings("unchecked")
     private ConfigMap newConfigMap(Trustify cr, Context<Trustify> context) {
-        UIIngressService ingressService = context.managedDependentResourceContext()
-                .getMandatory(Constants.CONTEXT_INGRESS_SERVICE_KEY, UIIngressService.class);
+//        UIIngressService ingressService = context.managedDependentResourceContext()
+//                .getMandatory(Constants.CONTEXT_INGRESS_SERVICE_KEY, UIIngressService.class);
 
-        ConfigurationTemplate.Data data = new ConfigurationTemplate.Data(
-                KeycloakUtils.serverUrlWithRealmIncluded(cr),
-                ingressService.getCurrentIngressURL(cr).orElse(""),
-                KeycloakRealmService.getUIClientName(cr),
-                KeycloakRealmService.getBackendClientName(cr)
-        );
-        String yamlFile = ConfigurationTemplate.configuration(data).render();
+        AtomicReference<ConfigurationTemplate.Data> authYamlData = new AtomicReference<>();
+
+        Optional.ofNullable(cr.getSpec().oidcSpec())
+                .ifPresent((oidcSpec) -> {
+                    if (oidcSpec.enabled()) {
+                        TrustifySpec.OidcProviderType providerType = Objects.nonNull(oidcSpec.type()) ? oidcSpec.type() : TrustifySpec.OidcProviderType.EMBEDDED;
+                        switch (providerType) {
+                            case EXTERNAL -> {
+                                if (oidcSpec.externalOidcSpec() != null) {
+                                    authYamlData.set(new ConfigurationTemplate.Data(List.of(
+                                            new ConfigurationTemplate.Client(
+                                                    oidcSpec.externalOidcSpec().serverUrl(),
+                                                    oidcSpec.externalOidcSpec().uiClientId()
+                                            ),
+                                            new ConfigurationTemplate.Client(
+                                                    oidcSpec.externalOidcSpec().serverUrl(),
+                                                    oidcSpec.externalOidcSpec().serverClientId()
+                                            )
+                                    )));
+                                } else {
+                                    logger.error("Oidc provider type is EXTERNAL but no config for external oidc was provided");
+                                }
+                            }
+                            case EMBEDDED -> {
+//                                authYamlData.set(new ConfigurationTemplate.Data(
+//                                        KeycloakUtils.serverUrlWithRealmIncluded(cr),
+//                                        ingressService.getCurrentIngressURL(cr).orElse(""),
+//                                        KeycloakRealmService.getUIClientName(cr),
+//                                        KeycloakRealmService.getBackendClientName(cr)
+//                                ));
+                            }
+                        }
+                    }
+                });
+
+
+        String yamlFile = ConfigurationTemplate.configuration(authYamlData.get()).render();
 
         final var labels = (Map<String, String>) context.managedDependentResourceContext()
                 .getMandatory(Constants.CONTEXT_LABELS_KEY, Map.class);

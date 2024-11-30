@@ -1,19 +1,15 @@
 authentication:
   clients:
-    - clientId: {data.uiClientId}
-      issuerUrl: {data.internalServerUrl}
-      scopeMappings: &keycloakScopeMappings
+    {#each data.clients}
+    - issuerUrl: {it.serverUrl}
+      clientId: {it.clientId}
+      {#if it_index == 0 }
+      scopeMappings: &ScopeMappings
         "create:document": [ "create.advisory", "create.importer", "create.metadata", "create.sbom", "create.weakness", "upload.dataset" ]
         "read:document": [ "ai", "read.advisory", "read.importer", "read.metadata", "read.sbom", "read.weakness" ]
         "update:document": [ "update.advisory", "update.importer", "update.metadata", "update.sbom", "update.weakness" ]
         "delete:document": [ "delete.advisory", "delete.importer", "delete.metadata", "delete.sbom", "delete.vulnerability", "delete.weakness" ]
-    - clientId: {data.backendClientId}
-      issuerUrl: {data.internalServerUrl}
-      scopeMappings: *keycloakScopeMappings
-
-    - clientId: {data.uiClientId}
-      issuerUrl: {data.externalServerUrl}
-      scopeMappings: *keycloakScopeMappings
-    - clientId: {data.backendClientId}
-      issuerUrl: {data.externalServerUrl}
-      scopeMappings: *keycloakScopeMappings
+      {#else}
+      scopeMappings: *ScopeMappings
+      {/if}
+    {/each}
