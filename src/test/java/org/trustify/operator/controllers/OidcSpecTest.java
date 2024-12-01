@@ -10,14 +10,14 @@ import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerDeployment;
 import org.trustify.operator.cdrs.v2alpha1.ui.UIDeployment;
-import org.trustify.operator.controllers.setup.K3sResource;
+import org.trustify.operator.controllers.setup.K3sWithOlmResource;
 
 import java.io.InputStream;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-@QuarkusTestResource(K3sResource.class)
+@QuarkusTestResource(K3sWithOlmResource.class)
 @QuarkusTest
 public class OidcSpecTest extends ReconcilerBaseTest {
 
@@ -217,7 +217,7 @@ public class OidcSpecTest extends ReconcilerBaseTest {
                         true,
                         TrustifySpec.OidcProviderType.EMBEDDED,
                         null,
-                       null
+                        null
                 ),
                 null,
                 null,
@@ -229,7 +229,7 @@ public class OidcSpecTest extends ReconcilerBaseTest {
         // Verify resources
         Awaitility.await()
                 .ignoreException(NullPointerException.class)
-                .atMost(2, TimeUnit.MINUTES)
+                .atMost(5, TimeUnit.MINUTES)
                 .untilAsserted(() -> {
                     verifyDatabase(trustify);
                     verifyServer(trustify);

@@ -18,7 +18,7 @@ public class HostnameUtils {
         return k8sClient.supports("route.openshift.io", "routes");
     }
 
-    public static Optional<String> getHostname(Trustify cr, KubernetesClient k8sClient) {
+    public static Optional<String> getHostnameForIngress(Trustify cr, KubernetesClient k8sClient) {
         Optional<String> userDefinedHost = CRDUtils.getValueFromSubSpec(cr.getSpec().hostnameSpec(), TrustifySpec.HostnameSpec::hostname);
         if (userDefinedHost.isPresent()) {
             return userDefinedHost;
@@ -28,6 +28,15 @@ public class HostnameUtils {
         if (isOpenShift) {
             return getClusterDomainOnOpenshift(k8sClient)
                     .map(domain -> cr.getMetadata().getNamespace() + "-" + cr.getMetadata().getName() + "." + domain);
+        }
+
+        return Optional.empty();
+    }
+
+    public static Optional<String> getHostnameForKeycloak(Trustify cr, KubernetesClient k8sClient) {
+        Optional<String> result = getHostnameForIngress(cr, k8sClient);
+        if (result.isPresent()) {
+            return result;
         }
 
         return Optional.ofNullable(k8sClient.getMasterUrl().getHost());

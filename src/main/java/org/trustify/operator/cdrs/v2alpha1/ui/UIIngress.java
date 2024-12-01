@@ -42,7 +42,7 @@ public class UIIngress extends CRUDKubernetesDependentResource<Ingress, Trustify
 
         var port = UIService.getServicePort(cr);
 
-        String hostname = HostnameUtils.isOpenshift(k8sClient) ? HostnameUtils.getHostname(cr, k8sClient).orElse(null) : null;
+        String hostname = HostnameUtils.getHostnameForIngress(cr, k8sClient).orElse(null);
         IngressTLS ingressTLS = getIngressTLS(cr);
         List<IngressTLS> ingressTLSList = ingressTLS != null ? Collections.singletonList(ingressTLS) : Collections.emptyList();
 

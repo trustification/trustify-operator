@@ -65,7 +65,7 @@ public class KeycloakServerService {
         spec.getIngressSpec().setIngressEnabled(false);
 
         // Hostname
-        String hostname = HostnameUtils.getHostname(cr, k8sClient)
+        String hostname = HostnameUtils.getHostnameForKeycloak(cr, k8sClient)
                 .orElseThrow(() -> new IllegalStateException("Could not find hostname for setting up Keycloak"));
 
         spec.setHostnameSpec(new HostnameSpec());
