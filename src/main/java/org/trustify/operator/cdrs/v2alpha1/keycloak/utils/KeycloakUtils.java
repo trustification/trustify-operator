@@ -28,7 +28,7 @@ public class KeycloakUtils {
     }
 
     public static String serverUrlWithRealmIncluded(Trustify cr) {
-        return KeycloakServerService.getServiceHost(cr) + KeycloakRealmService.getRealmClientPath(cr);
+        return KeycloakServerService.getServiceHostUrl(cr) + KeycloakRealmService.getRealmClientPath(cr);
     }
 
     public static String serverUrlWithRealmIncluded(String url, Trustify cr) {

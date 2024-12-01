@@ -30,7 +30,6 @@ import org.trustify.operator.cdrs.v2alpha1.server.*;
 import org.trustify.operator.cdrs.v2alpha1.ui.UIDeployment;
 import org.trustify.operator.cdrs.v2alpha1.ui.UIIngress;
 import org.trustify.operator.cdrs.v2alpha1.ui.UIService;
-import org.trustify.operator.cdrs.v2alpha1.ui.services.UIIngressService;
 
 import java.time.Duration;
 import java.util.AbstractMap;
@@ -164,9 +163,6 @@ public class TrustifyReconciler implements Reconciler<Trustify>, Cleaner<Trustif
     @Inject
     KeycloakRealmService keycloakRealmService;
 
-    @Inject
-    UIIngressService ingressService;
-
     @Override
     public void initContext(Trustify cr, Context<Trustify> context) {
         // Default Cert
@@ -183,7 +179,6 @@ public class TrustifyReconciler implements Reconciler<Trustify>, Cleaner<Trustif
         context.managedDependentResourceContext().put(Constants.CONTEXT_LABELS_KEY, labels);
 
         // Services
-        context.managedDependentResourceContext().put(Constants.CONTEXT_INGRESS_SERVICE_KEY, ingressService);
         context.managedDependentResourceContext().put(Constants.CONTEXT_KUBERNETES_CLIENT_KEY, k8sClient);
         context.managedDependentResourceContext().put(Constants.CONTEXT_KEYCLOAK_SERVER_SERVICE_KEY, keycloakServerService);
         context.managedDependentResourceContext().put(Constants.CONTEXT_KEYCLOAK_REALM_SERVICE_KEY, keycloakRealmService);

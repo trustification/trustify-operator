@@ -6,6 +6,7 @@ import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroupBuilder;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.*;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.trustify.operator.KeycloakSubscriptionConfig;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 
 import java.util.AbstractMap;
@@ -17,17 +18,20 @@ public class KeycloakOperatorService {
     @Inject
     KubernetesClient k8sClient;
 
+    @Inject
+    KeycloakSubscriptionConfig keycloakSubscriptionConfig;
+
     private Subscription subscription(Trustify cr) {
         return new SubscriptionBuilder()
                 .withNewMetadata()
-                .withName("my-keycloak-operator")
-                .withNamespace(cr.getMetadata().getNamespace())
+                    .withName("my-keycloak-operator")
+                    .withNamespace(cr.getMetadata().getNamespace())
                 .endMetadata()
                 .withNewSpec()
-                .withChannel("fast")
-                .withName("keycloak-operator")
-                .withSource("community-operators")
-                .withSourceNamespace("openshift-marketplace")
+                    .withChannel(keycloakSubscriptionConfig.channel())
+                    .withName("keycloak-operator")
+                    .withSource(keycloakSubscriptionConfig.source())
+                    .withSourceNamespace(keycloakSubscriptionConfig.namespace())
                 .endSpec()
                 .build();
     }

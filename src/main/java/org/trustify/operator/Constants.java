@@ -8,7 +8,6 @@ public class Constants {
 
     public static final String CONTEXT_CERTS_DEFAULT_KEY = "certsDefaultKey";
     public static final String CONTEXT_LABELS_KEY = "labels";
-    public static final String CONTEXT_INGRESS_SERVICE_KEY = "ingressService";
     public static final String CONTEXT_KUBERNETES_CLIENT_KEY = "kubernetesClient";
     public static final String CONTEXT_KEYCLOAK_SERVER_SERVICE_KEY = "keycloakServerService";
     public static final String CONTEXT_KEYCLOAK_REALM_SERVICE_KEY = "keycloakRealmService";

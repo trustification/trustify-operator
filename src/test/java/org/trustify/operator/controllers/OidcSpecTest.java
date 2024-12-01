@@ -200,4 +200,78 @@ public class OidcSpecTest extends ReconcilerBaseTest {
                 });
     }
 
+    @Test
+    public void embeddedOidc() throws InterruptedException {
+        // Create
+        final Trustify trustify = generateTrustify("embedded-oidc");
+        trustify.setSpec(new TrustifySpec(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                new TrustifySpec.OidcSpec(
+                        true,
+                        TrustifySpec.OidcProviderType.EMBEDDED,
+                        null,
+                       null
+                ),
+                null,
+                null,
+                null
+        ));
+
+        createTrustify(trustify);
+
+        // Verify resources
+        Awaitility.await()
+                .ignoreException(NullPointerException.class)
+                .atMost(2, TimeUnit.MINUTES)
+                .untilAsserted(() -> {
+                    verifyDatabase(trustify);
+                    verifyServer(trustify);
+                    verifyUI(trustify);
+                    verifyIngress(trustify);
+
+                    // Server
+                    final var serverDeployment = client.apps()
+                            .deployments()
+                            .inNamespace(trustify.getMetadata().getNamespace())
+                            .withName(ServerDeployment.getDeploymentName(trustify))
+                            .get();
+                    Optional<EnvVar> serverAuthEnv = serverDeployment.getSpec()
+                            .getTemplate()
+                            .getSpec()
+                            .getContainers()
+                            .getFirst()
+                            .getEnv()
+                            .stream().filter(envVar -> Objects.equals("AUTH_DISABLED", envVar.getName()))
+                            .findFirst();
+
+                    Assertions.assertTrue(serverAuthEnv.isPresent());
+                    Assertions.assertEquals("false", serverAuthEnv.get().getValue());
+
+                    // UI
+                    final var uiDeployment = client.apps()
+                            .deployments()
+                            .inNamespace(trustify.getMetadata().getNamespace())
+                            .withName(UIDeployment.getDeploymentName(trustify))
+                            .get();
+                    Optional<EnvVar> uiAuthEnv = uiDeployment.getSpec()
+                            .getTemplate()
+                            .getSpec()
+                            .getContainers()
+                            .getFirst()
+                            .getEnv()
+                            .stream().filter(envVar -> Objects.equals("AUTH_REQUIRED", envVar.getName()))
+                            .findFirst();
+
+                    Assertions.assertTrue(uiAuthEnv.isPresent());
+                    Assertions.assertEquals("true", uiAuthEnv.get().getValue());
+                });
+    }
+
 }

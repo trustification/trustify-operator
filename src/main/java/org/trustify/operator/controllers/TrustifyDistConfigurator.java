@@ -3,7 +3,6 @@ package org.trustify.operator.controllers;
 import io.fabric8.kubernetes.api.model.*;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
@@ -14,7 +13,6 @@ import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakServerServi
 import org.trustify.operator.cdrs.v2alpha1.server.ServerConfigurationConfigMap;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerStoragePersistentVolumeClaim;
-import org.trustify.operator.cdrs.v2alpha1.ui.services.UIIngressService;
 
 import java.util.*;
 import java.util.function.Function;
@@ -22,9 +20,6 @@ import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class TrustifyDistConfigurator {
-
-    @Inject
-    UIIngressService uiIngressService;
 
     public record Config(
             List<EnvVar> allEnvVars,
@@ -280,7 +275,7 @@ public class TrustifyDistConfigurator {
 //                                                .build(),
                                         new EnvVarBuilder()
                                                 .withName("UI_ISSUER_URL")
-                                                .withValue(KeycloakServerService.getServiceHost(cr))
+                                                .withValue(KeycloakServerService.getServiceHostUrl(cr))
                                                 .build(),
                                         new EnvVarBuilder()
                                                 .withName("UI_CLIENT_ID")

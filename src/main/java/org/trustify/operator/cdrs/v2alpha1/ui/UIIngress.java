@@ -1,25 +1,82 @@
 package org.trustify.operator.cdrs.v2alpha1.ui;
 
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
+import io.fabric8.kubernetes.api.model.networking.v1.IngressBuilder;
 import io.fabric8.kubernetes.api.model.networking.v1.IngressTLS;
 import io.fabric8.kubernetes.api.model.networking.v1.IngressTLSBuilder;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
+import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
+import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
 import org.trustify.operator.utils.CRDUtils;
+import org.trustify.operator.utils.HostnameUtils;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 @KubernetesDependent(labelSelector = UIIngress.LABEL_SELECTOR, resourceDiscriminator = UIIngressDiscriminator.class)
 @ApplicationScoped
-public class UIIngress extends UIIngressBase {
+public class UIIngress extends CRUDKubernetesDependentResource<Ingress, Trustify>
+        implements Condition<Ingress, Trustify> {
 
     public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=ui,component-variant=https";
+
+    public UIIngress() {
+        super(Ingress.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected Ingress newIngress(Trustify cr, Context<Trustify> context, String ingressName, Map<String, String> additionalLabels, Map<String, String> additionalAnnotations) {
+        KubernetesClient k8sClient = context.managedDependentResourceContext()
+                .getMandatory(Constants.CONTEXT_KUBERNETES_CLIENT_KEY, KubernetesClient.class);
+
+        final var labels = (Map<String, String>) context.managedDependentResourceContext()
+                .getMandatory(Constants.CONTEXT_LABELS_KEY, Map.class);
+
+        var port = UIService.getServicePort(cr);
+
+        String hostname = HostnameUtils.isOpenshift(k8sClient) ? HostnameUtils.getHostname(cr, k8sClient).orElse(null) : null;
+        IngressTLS ingressTLS = getIngressTLS(cr);
+        List<IngressTLS> ingressTLSList = ingressTLS != null ? Collections.singletonList(ingressTLS) : Collections.emptyList();
+
+        return new IngressBuilder()
+                .withNewMetadata()
+                .withName(ingressName)
+                .withNamespace(cr.getMetadata().getNamespace())
+                .withAnnotations(additionalAnnotations)
+                .withLabels(labels)
+                .addToLabels(additionalLabels)
+                .withOwnerReferences(CRDUtils.getOwnerReference(cr))
+                .endMetadata()
+                .withNewSpec()
+                .addNewRule()
+                .withHost(hostname)
+                .withNewHttp()
+                .addNewPath()
+                .withPath("/")
+                .withPathType("Prefix")
+                .withNewBackend()
+                .withNewService()
+                .withName(UIService.getServiceName(cr))
+                .withNewPort()
+                .withNumber(port)
+                .endPort()
+                .endService()
+                .endBackend()
+                .endPath()
+                .endHttp()
+                .endRule()
+                .withTls(ingressTLSList)
+                .endSpec()
+                .build();
+    }
 
     @Override
     protected Ingress desired(Trustify cr, Context<Trustify> context) {
@@ -50,22 +107,6 @@ public class UIIngress extends UIIngressBase {
                 .orElse(false);
     }
 
-    @Override
-    protected String getHostname(Trustify cr) {
-        return CRDUtils
-                .getValueFromSubSpec(cr.getSpec().hostnameSpec(), TrustifySpec.HostnameSpec::hostname)
-                .orElseGet(() -> getClusterDomainOnOpenshift()
-                        // Openshift
-                        .map(domain -> CRDUtils
-                                .getValueFromSubSpec(cr.getSpec().hostnameSpec(), TrustifySpec.HostnameSpec::hostname)
-                                .orElseGet(() -> getOpenshiftHostname(cr, k8sClient.getConfiguration().getNamespace(), domain))
-                        )
-                        // Kubernetes vanilla
-                        .orElse(null)
-                );
-    }
-
-    @Override
     protected IngressTLS getIngressTLS(Trustify cr) {
         String tlsSecretName = CRDUtils.getValueFromSubSpec(cr.getSpec().httpSpec(), TrustifySpec.HttpSpec::tlsSecret)
                 .orElse(null);
@@ -79,7 +120,4 @@ public class UIIngress extends UIIngressBase {
         return cr.getMetadata().getName() + Constants.INGRESS_SUFFIX;
     }
 
-    public static String getOpenshiftHostname(Trustify cr, String namespace, String domain) {
-        return namespace + "-" + cr.getMetadata().getName() + "." + domain;
-    }
 }

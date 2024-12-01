@@ -16,6 +16,7 @@ import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.deployment.spe
 import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.deployment.spec.HostnameSpec;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.deployment.spec.HttpSpec;
 import org.trustify.operator.cdrs.v2alpha1.keycloak.crds.v2alpha1.deployment.spec.IngressSpec;
+import org.trustify.operator.utils.HostnameUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -64,8 +65,12 @@ public class KeycloakServerService {
         spec.getIngressSpec().setIngressEnabled(false);
 
         // Hostname
+        String hostname = HostnameUtils.getHostname(cr, k8sClient)
+                .orElseThrow(() -> new IllegalStateException("Could not find hostname for setting up Keycloak"));
+
         spec.setHostnameSpec(new HostnameSpec());
-        spec.getHostnameSpec().setStrict(false);
+        spec.getHostnameSpec().setHostname("http://" + hostname + RELATIVE_PATH);
+        spec.getHostnameSpec().setBackchannelDynamic(true);
 
         // Additional options
         spec.setAdditionalOptions(List.of(
@@ -94,6 +99,14 @@ public class KeycloakServerService {
     }
 
     public static String getServiceHost(Trustify cr) {
-        return String.format("%s://%s.%s.svc:%s", "http", cr.getMetadata().getName() + "-keycloak-service", cr.getMetadata().getNamespace(), 8080);
+        return String.format("%s.%s.svc", cr.getMetadata().getName() + "-keycloak-service", cr.getMetadata().getNamespace());
+    }
+
+    public static String getServiceHostWithPort(Trustify cr) {
+        return String.format("%s:%s", getServiceHost(cr), 8080);
+    }
+
+    public static String getServiceHostUrl(Trustify cr) {
+        return String.format("%s://%s", "http", getServiceHostWithPort(cr));
     }
 }

@@ -219,7 +219,7 @@ public class UIDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
                                                 .build(),
                                         new EnvVarBuilder()
                                                 .withName("OIDC_SERVER_URL")
-                                                .withValue(KeycloakServerService.getServiceHost(cr))
+                                                .withValue(KeycloakServerService.getServiceHostUrl(cr))
                                                 .build(),
                                         new EnvVarBuilder()
                                                 .withName("OIDC_SERVER_IS_EMBEDDED")

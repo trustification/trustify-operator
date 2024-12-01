@@ -11,6 +11,8 @@ import org.jboss.logging.Logger;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakRealmService;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.utils.KeycloakUtils;
 import org.trustify.operator.cdrs.v2alpha1.server.templates.ConfigurationTemplate;
 import org.trustify.operator.utils.CRDUtils;
 
@@ -43,7 +45,7 @@ public class ServerConfigurationConfigMap extends CRUDKubernetesDependentResourc
 //        UIIngressService ingressService = context.managedDependentResourceContext()
 //                .getMandatory(Constants.CONTEXT_INGRESS_SERVICE_KEY, UIIngressService.class);
 
-        AtomicReference<ConfigurationTemplate.Data> authYamlData = new AtomicReference<>();
+        AtomicReference<String> yamlFile = new AtomicReference<>();
 
         Optional.ofNullable(cr.getSpec().oidcSpec())
                 .ifPresent((oidcSpec) -> {
@@ -52,7 +54,7 @@ public class ServerConfigurationConfigMap extends CRUDKubernetesDependentResourc
                         switch (providerType) {
                             case EXTERNAL -> {
                                 if (oidcSpec.externalOidcSpec() != null) {
-                                    authYamlData.set(new ConfigurationTemplate.Data(List.of(
+                                    ConfigurationTemplate.Data data = new ConfigurationTemplate.Data(List.of(
                                             new ConfigurationTemplate.Client(
                                                     oidcSpec.externalOidcSpec().serverUrl(),
                                                     oidcSpec.externalOidcSpec().uiClientId()
@@ -61,25 +63,28 @@ public class ServerConfigurationConfigMap extends CRUDKubernetesDependentResourc
                                                     oidcSpec.externalOidcSpec().serverUrl(),
                                                     oidcSpec.externalOidcSpec().serverClientId()
                                             )
-                                    )));
+                                    ));
+                                    yamlFile.set(ConfigurationTemplate.configuration(data).render());
                                 } else {
                                     logger.error("Oidc provider type is EXTERNAL but no config for external oidc was provided");
                                 }
                             }
                             case EMBEDDED -> {
-//                                authYamlData.set(new ConfigurationTemplate.Data(
-//                                        KeycloakUtils.serverUrlWithRealmIncluded(cr),
-//                                        ingressService.getCurrentIngressURL(cr).orElse(""),
-//                                        KeycloakRealmService.getUIClientName(cr),
-//                                        KeycloakRealmService.getBackendClientName(cr)
-//                                ));
+                                ConfigurationTemplate.Data data = new ConfigurationTemplate.Data(List.of(
+                                        new ConfigurationTemplate.Client(
+                                                KeycloakUtils.serverUrlWithRealmIncluded(cr),
+                                                KeycloakRealmService.getUIClientName(cr)
+                                        ),
+                                        new ConfigurationTemplate.Client(
+                                                KeycloakUtils.serverUrlWithRealmIncluded(cr),
+                                                KeycloakRealmService.getBackendClientName(cr)
+                                        )
+                                ));
+                                yamlFile.set(ConfigurationTemplate.configuration(data).render());
                             }
                         }
                     }
                 });
-
-
-        String yamlFile = ConfigurationTemplate.configuration(authYamlData.get()).render();
 
         final var labels = (Map<String, String>) context.managedDependentResourceContext()
                 .getMandatory(Constants.CONTEXT_LABELS_KEY, Map.class);
@@ -93,7 +98,7 @@ public class ServerConfigurationConfigMap extends CRUDKubernetesDependentResourc
                 .withOwnerReferences(CRDUtils.getOwnerReference(cr))
                 .endMetadata()
                 .withData(Map.of(
-                        getConfigMapAuthKey(cr), "\n" + yamlFile
+                        getConfigMapAuthKey(cr), "\n" + (yamlFile.get() != null ? yamlFile.get() : "")
                 ))
                 .build();
     }
