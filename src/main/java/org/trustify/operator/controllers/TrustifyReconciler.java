@@ -190,13 +190,17 @@ public class TrustifyReconciler implements Reconciler<Trustify>, Cleaner<Trustif
     }
 
     private Optional<String> extractOpenshiftRouterCertsDefault(Trustify cr, Context<Trustify> context) {
-        Secret nullableSecret = k8sClient.resources(Secret.class)
-                .inNamespace("openshift-ingress")
-                .withName("router-certs-default")
-                .get();
-        return Optional.ofNullable(nullableSecret)
-                .flatMap(secret -> Optional.ofNullable(secret.getData()))
-                .map(data -> data.get("tls.crt"));
+        try {
+            Secret nullableSecret = k8sClient.resources(Secret.class)
+                    .inNamespace("openshift-ingress")
+                    .withName("router-certs-default")
+                    .get();
+            return Optional.ofNullable(nullableSecret)
+                    .flatMap(secret -> Optional.ofNullable(secret.getData()))
+                    .map(data -> data.get("tls.crt"));
+        } catch (Exception e) {
+            return Optional.empty();
+        }
     }
 
     @Override
