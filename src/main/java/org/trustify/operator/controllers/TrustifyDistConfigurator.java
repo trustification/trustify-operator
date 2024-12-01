@@ -2,11 +2,15 @@ package org.trustify.operator.controllers;
 
 import io.fabric8.kubernetes.api.model.*;
 import io.quarkus.logging.Log;
+import jakarta.enterprise.context.ApplicationScoped;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
 import org.trustify.operator.cdrs.v2alpha1.db.DBDeployment;
 import org.trustify.operator.cdrs.v2alpha1.db.DBService;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakRealmService;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakServerService;
+import org.trustify.operator.cdrs.v2alpha1.server.ServerConfigurationConfigMap;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerStoragePersistentVolumeClaim;
 
@@ -14,54 +18,71 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@ApplicationScoped
 public class TrustifyDistConfigurator {
 
-    private final Trustify cr;
-
-    private final List<EnvVar> allEnvVars;
-    private final List<Volume> allVolumes;
-    private final List<VolumeMount> allVolumeMounts;
-
-    public TrustifyDistConfigurator(Trustify cr) {
-        this.cr = cr;
-        this.allEnvVars = new ArrayList<>();
-        this.allVolumes = new ArrayList<>();
-        this.allVolumeMounts = new ArrayList<>();
-
-        configureHttp();
-        configureDatabase();
-        configureStorage();
-        configureOidc();
+    public record Config(
+            List<EnvVar> allEnvVars,
+            List<Volume> allVolumes,
+            List<VolumeMount> allVolumeMounts
+    ) {
     }
 
-    public List<EnvVar> getAllEnvVars() {
-        return allEnvVars;
+    public Config configureDistOption(Trustify cr) {
+        Config config = new Config(
+                new ArrayList<>(),
+                new ArrayList<>(),
+                new ArrayList<>()
+        );
+
+        configureGeneral(config, cr);
+        configureHttp(config, cr);
+        configureDatabase(config, cr);
+        configureStorage(config, cr);
+        configureOidc(config, cr);
+
+        return config;
     }
 
-    public List<Volume> getAllVolumes() {
-        return allVolumes;
-    }
-
-    public List<VolumeMount> getAllVolumeMounts() {
-        return allVolumeMounts;
-    }
-
-    private void configureHttp() {
-        var optionMapper = optionMapper(cr.getSpec().httpSpec());
-        configureTLS(optionMapper);
-
-        List<EnvVar> envVars = optionMapper.getEnvVars();
-        allEnvVars.addAll(envVars);
-
-        // Force to use HTTP v4
-        allEnvVars.add(new EnvVarBuilder()
-                .withName("HTTP_SERVER_BIND_ADDR")
-                .withValue("0.0.0.0")
+    private void configureGeneral(Config config, Trustify cr) {
+        config.allEnvVars.add(new EnvVarBuilder()
+                .withName("RUST_LOG")
+                .withValue("info")
+                .build()
+        );
+        config.allEnvVars.add(new EnvVarBuilder()
+                .withName("INFRASTRUCTURE_ENABLED")
+                .withValue("true")
+                .build()
+        );
+        config.allEnvVars.add(new EnvVarBuilder()
+                .withName("INFRASTRUCTURE_BIND")
+                .withValue("[::]:" + Constants.HTTP_INFRAESTRUCTURE_PORT)
+                .build()
+        );
+        config.allEnvVars.add(new EnvVarBuilder()
+                .withName("CLIENT_TLS_CA_CERTIFICATES")
+                .withValue("/run/secrets/kubernetes.io/serviceaccount/service-ca.crt")
                 .build()
         );
     }
 
-    private void configureTLS(OptionMapper<TrustifySpec.HttpSpec> optionMapper) {
+    private void configureHttp(Config config, Trustify cr) {
+        var optionMapper = optionMapper(cr.getSpec().httpSpec());
+        configureTLS(config, cr, optionMapper);
+
+        List<EnvVar> envVars = optionMapper.getEnvVars();
+        config.allEnvVars.addAll(envVars);
+
+        // Force to use HTTP v4
+        config.allEnvVars.add(new EnvVarBuilder()
+                .withName("HTTP_SERVER_BIND_ADDR")
+                .withValue("::")
+                .build()
+        );
+    }
+
+    private void configureTLS(Config config, Trustify cr, OptionMapper<TrustifySpec.HttpSpec> optionMapper) {
         final String certFileOptionName = "HTTP_SERVER_TLS_CERTIFICATE_FILE";
         final String keyFileOptionName = "HTTP_SERVER_TLS_KEY_FILE";
 
@@ -89,11 +110,11 @@ public class TrustifyDistConfigurator {
                 .withMountPath(Constants.CERTIFICATES_FOLDER)
                 .build();
 
-        allVolumes.add(volume);
-        allVolumeMounts.add(volumeMount);
+        config.allVolumes.add(volume);
+        config.allVolumeMounts().add(volumeMount);
     }
 
-    private void configureDatabase() {
+    private void configureDatabase(Config config, Trustify cr) {
         List<EnvVar> envVars = Optional.ofNullable(cr.getSpec().databaseSpec())
                 .flatMap(databaseSpec -> {
                     if (databaseSpec.externalDatabase()) {
@@ -113,15 +134,15 @@ public class TrustifyDistConfigurator {
                         .mapOption("TRUSTD_DB_USER", spec -> DBDeployment.getUsernameSecretKeySelector(cr))
                         .mapOption("TRUSTD_DB_PASSWORD", spec -> DBDeployment.getPasswordSecretKeySelector(cr))
                         .mapOption("TRUSTD_DB_NAME", spec -> DBDeployment.getDatabaseName(cr))
-                        .mapOption("TRUSTD_DB_HOST", spec -> DBService.getServiceName(cr))
+                        .mapOption("TRUSTD_DB_HOST", spec -> String.format("%s.%s.svc", DBService.getServiceName(cr), cr.getMetadata().getNamespace()))
                         .mapOption("TRUSTD_DB_PORT", spec -> DBDeployment.getDatabasePort(cr))
                         .getEnvVars()
                 );
 
-        allEnvVars.addAll(envVars);
+        config.allEnvVars.addAll(envVars);
     }
 
-    private void configureStorage() {
+    private void configureStorage(Config config, Trustify cr) {
         List<EnvVar> envVars = new ArrayList<>();
 
         TrustifySpec.StorageSpec storageSpec = Optional.ofNullable(cr.getSpec().storageSpec())
@@ -162,8 +183,8 @@ public class TrustifyDistConfigurator {
                         .withMountPath("/opt/trustify")
                         .build();
 
-                allVolumes.add(volume);
-                allVolumeMounts.add(volumeMount);
+                config.allVolumes.add(volume);
+                config.allVolumeMounts.add(volumeMount);
             }
             case S3 -> {
                 envVars.addAll(optionMapper(storageSpec.s3StorageSpec())
@@ -176,26 +197,118 @@ public class TrustifyDistConfigurator {
             }
         }
 
-        allEnvVars.addAll(envVars);
+        config.allEnvVars.addAll(envVars);
     }
 
-    private void configureOidc() {
-        List<EnvVar> envVars = Optional.ofNullable(cr.getSpec().oidcSpec())
-                .map(oidcSpec -> optionMapper(oidcSpec)
-                        .mapOption("AUTH_DISABLED", spec -> !spec.enabled())
-                        .mapOption("AUTHENTICATOR_OIDC_ISSUER_URL", TrustifySpec.OidcSpec::serverUrl)
-                        .mapOption("AUTHENTICATOR_OIDC_CLIENT_IDS", TrustifySpec.OidcSpec::serverClientId)
-                        .mapOption("UI_ISSUER_URL", TrustifySpec.OidcSpec::serverUrl)
-                        .mapOption("UI_CLIENT_ID", TrustifySpec.OidcSpec::uiClientId)
-                        .getEnvVars()
-                )
-                .orElseGet(() -> List.of(new EnvVarBuilder()
+    private void configureOidc(Config config, Trustify cr) {
+        Optional.ofNullable(cr.getSpec().oidcSpec())
+                .ifPresentOrElse((oidcSpec) -> {
+                    if (oidcSpec.enabled()) {
+//                        // Ingress TLS
+//                        var ingressTlsMountPath = "/etc/config/ingress-tls.ctr";
+//                        var ingressTlsVolume = new VolumeBuilder()
+//                                .withName("ingress-tls-pvol")
+//                                .withConfigMap(new ConfigMapVolumeSourceBuilder()
+//                                        .withName(CommonConfigMap.getConfigMapName(cr))
+//                                        .withDefaultMode(420)
+//                                        .build()
+//                                )
+//                                .build();
+//                        var ingressTlsVolumeMount = new VolumeMountBuilder()
+//                                .withName(ingressTlsVolume.getName())
+//                                .withMountPath(ingressTlsMountPath)
+//                                .withSubPath(CommonConfigMap.getConfigMapClusterTlsKey(cr))
+//                                .build();
+//                        config.allVolumes.add(ingressTlsVolume);
+//                        config.allVolumeMounts.add(ingressTlsVolumeMount);
+
+                        // Volumes
+                        var configurationMountPath = "/etc/config/configuration.yaml";
+                        var configurationVolume = new VolumeBuilder()
+                                .withName("authentication-configuration-pvol")
+                                .withConfigMap(new ConfigMapVolumeSourceBuilder()
+                                        .withName(ServerConfigurationConfigMap.getConfigMapName(cr))
+                                        .withDefaultMode(420)
+                                        .build()
+                                )
+                                .build();
+                        var configurationVolumeMount = new VolumeMountBuilder()
+                                .withName(configurationVolume.getName())
+                                .withMountPath(configurationMountPath)
+                                .withSubPath(ServerConfigurationConfigMap.getConfigMapAuthKey(cr))
+                                .build();
+                        config.allVolumes.add(configurationVolume);
+                        config.allVolumeMounts.add(configurationVolumeMount);
+
+                        // Env vars
+                        TrustifySpec.OidcProviderType providerType = Objects.nonNull(oidcSpec.type()) ? oidcSpec.type() : TrustifySpec.OidcProviderType.EMBEDDED;
+
+                        List<EnvVar> envVars;
+                        switch (providerType) {
+                            case EXTERNAL -> {
+                                envVars = Optional.ofNullable(oidcSpec.externalOidcSpec())
+                                        .map(externalOidcSpec -> optionMapper(externalOidcSpec)
+//                                                .mapOption("AUTHENTICATOR_OIDC_ISSUER_URL", TrustifySpec.ExternalOidcSpec::serverUrl)
+//                                                .mapOption("AUTHENTICATOR_OIDC_CLIENT_IDS", TrustifySpec.ExternalOidcSpec::serverClientId)
+                                                        .mapOption("UI_ISSUER_URL", TrustifySpec.ExternalOidcSpec::serverUrl)
+                                                        .mapOption("UI_CLIENT_ID", TrustifySpec.ExternalOidcSpec::uiClientId)
+                                                        .getEnvVars()
+                                        )
+                                        .orElseGet(ArrayList::new);
+                            }
+                            case EMBEDDED -> {
+//                                uiIngressService.getCurrentIngressURL(cr)
+//                                        .ifPresentOrElse(ingressUrl -> config.allEnvVars.add(new EnvVarBuilder()
+//                                                .withName("AUTHENTICATOR_OIDC_ISSUER_URL")
+//                                                .withValue(KeycloakUtils.serverUrlWithRealmIncluded(ingressUrl, cr))
+//                                                .build()
+//                                        ), () -> config.allEnvVars.add(new EnvVarBuilder()
+//                                                .withName("AUTHENTICATOR_OIDC_ISSUER_URL")
+//                                                .withValue(KeycloakUtils.serverUrlWithRealmIncluded(cr))
+//                                                .build()
+//                                        ));
+
+                                envVars = List.of(
+//                                        new EnvVarBuilder()
+//                                                .withName("AUTHENTICATOR_OIDC_CLIENT_IDS")
+//                                                .withValue(KeycloakRealmService.getUIClientName(cr))
+//                                                .build(),
+                                        new EnvVarBuilder()
+                                                .withName("UI_ISSUER_URL")
+                                                .withValue(KeycloakServerService.getServiceHostUrl(cr))
+                                                .build(),
+                                        new EnvVarBuilder()
+                                                .withName("UI_CLIENT_ID")
+                                                .withValue(KeycloakRealmService.getUIClientName(cr))
+                                                .build()
+                                );
+                            }
+                            default -> envVars = Collections.emptyList();
+                        }
+
+                        config.allEnvVars.add(new EnvVarBuilder()
+                                .withName("AUTH_CONFIGURATION")
+                                .withValue(configurationMountPath)
+                                .build()
+                        );
+                        config.allEnvVars.add(new EnvVarBuilder()
+                                .withName("AUTH_DISABLED")
+                                .withValue(Boolean.FALSE.toString())
+                                .build()
+                        );
+                        config.allEnvVars.addAll(envVars);
+                    } else {
+                        config.allEnvVars.add(new EnvVarBuilder()
+                                .withName("AUTH_DISABLED")
+                                .withValue(Boolean.TRUE.toString())
+                                .build()
+                        );
+                    }
+                }, () -> config.allEnvVars.add(new EnvVarBuilder()
                         .withName("AUTH_DISABLED")
                         .withValue(Boolean.TRUE.toString())
-                        .build())
-                );
-
-        allEnvVars.addAll(envVars);
+                        .build()
+                ));
     }
 
     private <T> OptionMapper<T> optionMapper(T optionSpec) {

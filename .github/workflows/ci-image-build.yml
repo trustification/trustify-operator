@@ -1,0 +1,42 @@
+name: CI (test image build for a PR with build related changes)
+
+on:
+  pull_request:
+    branches:
+      - "main"
+      - "release-*"
+
+jobs:
+  test-image-build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        architecture: # keep this list in sync with `image-build.yaml`
+          - amd64
+#          - arm64 # Takes too much to execute
+
+    concurrency:
+      group: test-image-build-${{ matrix.architecture }}_${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout merge commit for PR${{ github.event.pull_request.number }}
+        uses: actions/checkout@v4
+
+      - name: Setup QEMU to be able to build on ${{ matrix.architecture }}
+        if: ${{ matrix.architecture != 'amd64' }}
+        uses: docker/setup-qemu-action@master
+        with:
+          platforms: ${{ matrix.architecture }}
+
+      - name: Test build image on ${{ matrix.architecture }}
+        id: test-build
+        uses: redhat-actions/buildah-build@main
+        with:
+          image: "trustify-operator"
+          tags: pr${{ github.event.pull_request.number }}-${{ matrix.architecture }}
+          archs: ${{ matrix.architecture }}
+          labels: ""
+          containerfiles: "./Dockerfile"
+          context: "."

@@ -14,14 +14,13 @@ import org.trustify.operator.Config;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakRealmService;
+import org.trustify.operator.cdrs.v2alpha1.keycloak.services.KeycloakServerService;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerDeployment;
 import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
 import org.trustify.operator.utils.CRDUtils;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -191,11 +190,73 @@ public class UIDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
     }
 
     private List<EnvVar> getEnvVars(Trustify cr) {
-        return Arrays.asList(
-                new EnvVarBuilder()
+        List<EnvVar> oidcEnvVars = Optional.ofNullable(cr.getSpec().oidcSpec())
+                .map(oidcSpec -> {
+                    if (oidcSpec.enabled()) {
+                        TrustifySpec.OidcProviderType providerType = Objects.nonNull(oidcSpec.type()) ? oidcSpec.type() : TrustifySpec.OidcProviderType.EMBEDDED;
+
+                        List<EnvVar> providerEnvs;
+                        switch (providerType) {
+                            case EXTERNAL -> {
+                                providerEnvs = Optional.ofNullable(oidcSpec.externalOidcSpec())
+                                        .map(externalOidcSpec -> List.of(
+                                                new EnvVarBuilder()
+                                                        .withName("OIDC_CLIENT_ID")
+                                                        .withValue(externalOidcSpec.uiClientId())
+                                                        .build(),
+                                                new EnvVarBuilder()
+                                                        .withName("OIDC_SERVER_URL")
+                                                        .withValue(externalOidcSpec.serverUrl())
+                                                        .build()
+                                        ))
+                                        .orElseGet(ArrayList::new);
+                            }
+                            case EMBEDDED -> {
+                                providerEnvs = List.of(
+                                        new EnvVarBuilder()
+                                                .withName("OIDC_CLIENT_ID")
+                                                .withValue(KeycloakRealmService.getUIClientName(cr))
+                                                .build(),
+                                        new EnvVarBuilder()
+                                                .withName("OIDC_SERVER_URL")
+                                                .withValue(KeycloakServerService.getServiceHostUrl(cr))
+                                                .build(),
+                                        new EnvVarBuilder()
+                                                .withName("OIDC_SERVER_IS_EMBEDDED")
+                                                .withValue(Boolean.TRUE.toString())
+                                                .build(),
+                                        new EnvVarBuilder()
+                                                .withName("OIDC_SERVER_EMBEDDED_PATH")
+                                                .withValue(String.format("/auth/realms/%s", KeycloakRealmService.getRealmName(cr)))
+                                                .build()
+                                );
+                            }
+                            default -> providerEnvs = Collections.emptyList();
+                        }
+
+                        List<EnvVar> result = new ArrayList<>();
+                        result.add(new EnvVarBuilder()
+                                .withName("AUTH_REQUIRED")
+                                .withValue(Boolean.TRUE.toString())
+                                .build()
+                        );
+                        result.addAll(providerEnvs);
+                        return result;
+                    } else {
+                        return List.of(new EnvVarBuilder()
+                                .withName("AUTH_REQUIRED")
+                                .withValue(Boolean.FALSE.toString())
+                                .build()
+                        );
+                    }
+                })
+                .orElseGet(() -> List.of(new EnvVarBuilder()
                         .withName("AUTH_REQUIRED")
-                        .withValue("false")
-                        .build(),
+                        .withValue(Boolean.FALSE.toString())
+                        .build()
+                ));
+
+        List<EnvVar> envVars = Arrays.asList(
                 new EnvVarBuilder()
                         .withName("ANALYTICS_ENABLED")
                         .withValue("false")
@@ -207,8 +268,18 @@ public class UIDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
                 new EnvVarBuilder()
                         .withName("UI_INGRESS_PROXY_BODY_SIZE")
                         .withValue("50m")
+                        .build(),
+                new EnvVarBuilder()
+                        .withName("NODE_EXTRA_CA_CERTS")
+                        .withValue("/opt/app-root/src/ca.crt")
                         .build()
         );
+
+        List<EnvVar> result = new ArrayList<>();
+        result.addAll(oidcEnvVars);
+        result.addAll(envVars);
+
+        return result;
     }
 
     public static String getDeploymentName(Trustify cr) {

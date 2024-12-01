@@ -5,8 +5,16 @@ related:
     server: ${RELATED_IMAGE_SERVER:ghcr.io/trustification/trustd:latest}
     db: ${RELATED_IMAGE_DB:quay.io/sclorg/postgresql-15-c9s:latest}
     pull-policy: Always
+keycloak-operator:
+  subscription:
+    namespace: olm
+    source: operatorhubio-catalog
+    channel: fast
+
 # Quarkus config
 quarkus:
+  qute:
+    suffixes: json,yaml
   container-image:
     registry: ghcr.io
     tag: v${quarkus.application.version}
@@ -21,6 +29,8 @@ quarkus:
     generate-with-watched-namespaces: JOSDK_WATCH_CURRENT
     helm:
       enabled: true
+  kubernetes-client:
+    request-retry-backoff-limit: 10
   # https://quarkus.io/guides/deploying-to-kubernetes#environment-variables-from-keyvalue-pairs
   kubernetes:
     idempotent: "true"
