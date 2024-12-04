@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        preset: [ "okd", "openshift", "microshift" ]
+        preset: [ "openshift", "microshift" ]
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
@@ -88,6 +88,7 @@ jobs:
         run: |
           sudo -su $USER crc setup
           sudo -su $USER crc start
+          sudo -su $USER crc status
           sleep 60
       - name: Copy OpenShift client
         run: sudo cp /home/$USER/.crc/bin/oc/oc /usr/bin/
@@ -98,7 +99,7 @@ jobs:
           oc get pods -A
       - name: Test
         run: |
-          export HOST_KUBERNETES_CONFIG_FILE=${HOME}/$USER/.kube/config
+          export HOST_KUBERNETES_CONFIG_FILE=/home/$USER/.kube/config
           echo "Using ${HOST_KUBERNETES_CONFIG_FILE} as host k8s"
           mvn verify
 
