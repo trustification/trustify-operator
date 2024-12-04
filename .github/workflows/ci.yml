@@ -88,7 +88,6 @@ jobs:
         run: |
           sudo -su $USER crc setup
           sudo -su $USER crc start
-          sudo -su $USER crc status
           sleep 60
       - name: Copy OpenShift client
         run: sudo cp /home/$USER/.crc/bin/oc/oc /usr/bin/
