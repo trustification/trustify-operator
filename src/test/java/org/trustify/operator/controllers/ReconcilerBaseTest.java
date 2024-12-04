@@ -14,13 +14,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
-import org.trustify.operator.cdrs.v2alpha1.db.DBDeployment;
-import org.trustify.operator.cdrs.v2alpha1.db.DBService;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerDeployment;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
-import org.trustify.operator.cdrs.v2alpha1.ui.UIDeployment;
-import org.trustify.operator.cdrs.v2alpha1.ui.UIIngress;
-import org.trustify.operator.cdrs.v2alpha1.ui.UIService;
+import org.trustify.operator.cdrs.v2alpha1.server.db.deployment.DBDeployment;
+import org.trustify.operator.cdrs.v2alpha1.server.db.service.DBService;
+import org.trustify.operator.cdrs.v2alpha1.server.deployment.ServerDeployment;
+import org.trustify.operator.cdrs.v2alpha1.server.service.ServerService;
+import org.trustify.operator.cdrs.v2alpha1.ui.deployment.UIDeployment;
+import org.trustify.operator.cdrs.v2alpha1.ingress.AppIngress;
+import org.trustify.operator.cdrs.v2alpha1.ui.service.UIService;
 
 import java.util.List;
 import java.util.Objects;
@@ -258,7 +258,7 @@ public abstract class ReconcilerBaseTest {
         // Ingress
         final var ingress = client.network().v1().ingresses()
                 .inNamespace(cr.getMetadata().getNamespace())
-                .withName(UIIngress.getIngressName(cr))
+                .withName(AppIngress.getIngressName(cr))
                 .get();
 
         final var rules = ingress.getSpec().getRules();

@@ -13,14 +13,21 @@ import io.javaoperatorsdk.operator.processing.event.source.informer.InformerEven
 import org.jboss.logging.Logger;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifyStatusCondition;
-import org.trustify.operator.cdrs.v2alpha1.db.*;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerDeployment;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerStoragePersistentVolumeClaim;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerStoragePersistentVolumeClaimActivationCondition;
-import org.trustify.operator.cdrs.v2alpha1.ui.UIDeployment;
-import org.trustify.operator.cdrs.v2alpha1.ui.UIIngress;
-import org.trustify.operator.cdrs.v2alpha1.ui.UIService;
+import org.trustify.operator.cdrs.v2alpha1.server.deployment.ServerDeployment;
+import org.trustify.operator.cdrs.v2alpha1.server.service.ServerService;
+import org.trustify.operator.cdrs.v2alpha1.server.pvc.ServerStoragePersistentVolumeClaim;
+import org.trustify.operator.cdrs.v2alpha1.server.pvc.ServerStoragePersistentVolumeClaimActivationCondition;
+import org.trustify.operator.cdrs.v2alpha1.server.db.deployment.DBDeployment;
+import org.trustify.operator.cdrs.v2alpha1.server.db.deployment.DBDeploymentActivationCondition;
+import org.trustify.operator.cdrs.v2alpha1.server.db.pvc.DBPersistentVolumeClaim;
+import org.trustify.operator.cdrs.v2alpha1.server.db.pvc.DBPersistentVolumeClaimActivationCondition;
+import org.trustify.operator.cdrs.v2alpha1.server.db.secret.DBSecret;
+import org.trustify.operator.cdrs.v2alpha1.server.db.secret.DBSecretActivationCondition;
+import org.trustify.operator.cdrs.v2alpha1.server.db.service.DBService;
+import org.trustify.operator.cdrs.v2alpha1.server.db.service.DBServiceActivationCondition;
+import org.trustify.operator.cdrs.v2alpha1.ui.deployment.UIDeployment;
+import org.trustify.operator.cdrs.v2alpha1.ingress.AppIngress;
+import org.trustify.operator.cdrs.v2alpha1.ui.service.UIService;
 
 import java.time.Duration;
 import java.util.Map;
@@ -81,8 +88,8 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
 
                 @Dependent(
                         name = "ui-ingress",
-                        type = UIIngress.class,
-                        readyPostcondition = UIIngress.class
+                        type = AppIngress.class,
+                        readyPostcondition = AppIngress.class
                 )
         }
 )

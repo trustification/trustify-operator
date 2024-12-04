@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
-import org.trustify.operator.cdrs.v2alpha1.db.DBDeployment;
+import org.trustify.operator.cdrs.v2alpha1.server.db.deployment.DBDeployment;
 import org.trustify.operator.controllers.setup.K3sResource;
 
 import java.io.InputStream;

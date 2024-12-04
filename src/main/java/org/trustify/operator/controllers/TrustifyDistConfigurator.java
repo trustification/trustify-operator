@@ -5,10 +5,10 @@ import io.quarkus.logging.Log;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
-import org.trustify.operator.cdrs.v2alpha1.db.DBDeployment;
-import org.trustify.operator.cdrs.v2alpha1.db.DBService;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerService;
-import org.trustify.operator.cdrs.v2alpha1.server.ServerStoragePersistentVolumeClaim;
+import org.trustify.operator.cdrs.v2alpha1.server.db.deployment.DBDeployment;
+import org.trustify.operator.cdrs.v2alpha1.server.db.service.DBService;
+import org.trustify.operator.cdrs.v2alpha1.server.service.ServerService;
+import org.trustify.operator.cdrs.v2alpha1.server.pvc.ServerStoragePersistentVolumeClaim;
 
 import java.util.*;
 import java.util.function.Function;
