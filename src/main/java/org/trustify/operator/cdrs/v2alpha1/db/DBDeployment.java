@@ -14,6 +14,7 @@ import org.trustify.operator.Config;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
+import org.trustify.operator.cdrs.v2alpha1.db.utils.DBUtils;
 import org.trustify.operator.utils.CRDUtils;
 
 import java.util.Arrays;
@@ -56,17 +57,8 @@ public class DBDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
     }
 
     @Override
-    public boolean isMet(DependentResource<Deployment, Trustify> dependentResource, Trustify primary, Context<Trustify> context) {
-        return context.getSecondaryResource(Deployment.class, new DBDeploymentDiscriminator())
-                .map(deployment -> {
-                    final var status = deployment.getStatus();
-                    if (status != null) {
-                        final var readyReplicas = status.getReadyReplicas();
-                        return readyReplicas != null && readyReplicas >= 1;
-                    }
-                    return false;
-                })
-                .orElse(false);
+    public boolean isMet(DependentResource<Deployment, Trustify> dependentResource, Trustify cr, Context<Trustify> context) {
+        return DBUtils.isDeploymentReady(dependentResource, cr, context);
     }
 
     @SuppressWarnings("unchecked")

@@ -1,6 +1,8 @@
 package org.trustify.operator.controllers;
 
+import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
+import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.javaoperatorsdk.operator.api.config.informer.InformerConfiguration;
@@ -88,7 +90,9 @@ public class TrustifyReconciler implements Reconciler<Trustify>, ContextInitiali
 
     private static final Logger logger = Logger.getLogger(TrustifyReconciler.class);
 
+    public static final String CONFIG_MAP_EVENT_SOURCE = "configMapSource";
     public static final String PVC_EVENT_SOURCE = "pcvSource";
+    public static final String SECRET_EVENT_SOURCE = "secretSource";
     public static final String DEPLOYMENT_EVENT_SOURCE = "deploymentSource";
     public static final String SERVICE_EVENT_SOURCE = "serviceSource";
 
@@ -110,7 +114,7 @@ public class TrustifyReconciler implements Reconciler<Trustify>, ContextInitiali
                 .map(wrs -> {
                     if (wrs.allDependentResourcesReady()) {
                         if (cr.getStatus().isAvailable()) {
-                            logger.infof("Trustify {} is ready to be used", cr.getMetadata().getName());
+                            logger.infof("Trustify %s is ready to be used", cr.getMetadata().getName());
                         }
 
                         TrustifyStatusCondition status = new TrustifyStatusCondition();
@@ -136,16 +140,22 @@ public class TrustifyReconciler implements Reconciler<Trustify>, ContextInitiali
 
     @Override
     public Map<String, EventSource> prepareEventSources(EventSourceContext<Trustify> context) {
+        var configMapInformerConfiguration = InformerConfiguration.from(ConfigMap.class, context).build();
         var pcvInformerConfiguration = InformerConfiguration.from(PersistentVolumeClaim.class, context).build();
+        var secretInformerConfiguration = InformerConfiguration.from(Secret.class, context).build();
         var deploymentInformerConfiguration = InformerConfiguration.from(Deployment.class, context).build();
         var serviceInformerConfiguration = InformerConfiguration.from(Service.class, context).build();
 
+        var configMapInformerConfigurationInformerEventSource = new InformerEventSource<>(configMapInformerConfiguration, context);
         var pcvInformerEventSource = new InformerEventSource<>(pcvInformerConfiguration, context);
+        var secretInformerEventSource = new InformerEventSource<>(secretInformerConfiguration, context);
         var deploymentInformerEventSource = new InformerEventSource<>(deploymentInformerConfiguration, context);
         var serviceInformerEventSource = new InformerEventSource<>(serviceInformerConfiguration, context);
 
         return Map.of(
+                CONFIG_MAP_EVENT_SOURCE, configMapInformerConfigurationInformerEventSource,
                 PVC_EVENT_SOURCE, pcvInformerEventSource,
+                SECRET_EVENT_SOURCE, secretInformerEventSource,
                 DEPLOYMENT_EVENT_SOURCE, deploymentInformerEventSource,
                 SERVICE_EVENT_SOURCE, serviceInformerEventSource
         );
