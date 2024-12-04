@@ -87,7 +87,7 @@ import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT
                 ),
 
                 @Dependent(
-                        name = "ui-ingress",
+                        name = "app-ingress",
                         type = AppIngress.class,
                         readyPostcondition = AppIngress.class
                 )

@@ -14,12 +14,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
+import org.trustify.operator.cdrs.v2alpha1.ingress.AppIngress;
 import org.trustify.operator.cdrs.v2alpha1.server.db.deployment.DBDeployment;
 import org.trustify.operator.cdrs.v2alpha1.server.db.service.DBService;
 import org.trustify.operator.cdrs.v2alpha1.server.deployment.ServerDeployment;
 import org.trustify.operator.cdrs.v2alpha1.server.service.ServerService;
 import org.trustify.operator.cdrs.v2alpha1.ui.deployment.UIDeployment;
-import org.trustify.operator.cdrs.v2alpha1.ingress.AppIngress;
 import org.trustify.operator.cdrs.v2alpha1.ui.service.UIService;
 
 import java.util.List;
