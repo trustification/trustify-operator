@@ -1,3 +1,8 @@
+trustify:
+  default-pvc-size: 10G
+"%test":
+   trustify:
+     default-pvc-size: 1G
 # Operator config
 related:
   image:

@@ -7,7 +7,9 @@ import io.javaoperatorsdk.operator.processing.dependent.Matcher;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.trustify.operator.Constants;
+import org.trustify.operator.TrustifyConfig;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
 import org.trustify.operator.utils.CRDUtils;
@@ -20,6 +22,9 @@ public class DBPersistentVolumeClaim extends CRUDKubernetesDependentResource<Per
         implements Creator<PersistentVolumeClaim, Trustify> {
 
     public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=db";
+
+    @Inject
+    TrustifyConfig trustifyConfig;
 
     public DBPersistentVolumeClaim() {
         super(PersistentVolumeClaim.class);
@@ -36,7 +41,7 @@ public class DBPersistentVolumeClaim extends CRUDKubernetesDependentResource<Per
                 .getMandatory(Constants.CONTEXT_LABELS_KEY, Map.class);
 
         String pvcStorageSize = CRDUtils.getValueFromSubSpec(cr.getSpec().databaseSpec(), TrustifySpec.DatabaseSpec::pvcSize)
-                .orElse(Constants.DEFAULT_PVC_SIZE);
+                .orElse(trustifyConfig.defaultPvcSize());
 
         return new PersistentVolumeClaimBuilder()
                 .withNewMetadata()
