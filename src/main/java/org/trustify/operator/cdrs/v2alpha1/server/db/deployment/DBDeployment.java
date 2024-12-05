@@ -73,7 +73,7 @@ public class DBDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
                 .withName(getDeploymentName(cr))
                 .withNamespace(cr.getMetadata().getNamespace())
                 .withLabels(contextLabels)
-                .addToLabels("component", "db")
+                .addToLabels(CRDUtils.getLabelsFromString(LABEL_SELECTOR))
                 .addToLabels(Map.of(
                         "app.openshift.io/runtime", "postgresql"
                 ))
