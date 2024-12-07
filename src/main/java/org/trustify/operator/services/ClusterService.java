@@ -15,7 +15,7 @@ public class ClusterService {
 
     @PostConstruct
     void init() {
-        boolean isOpenshift = k8sClient.supports("route.openshift.io", "routes");
+        boolean isOpenshift = k8sClient.supports("route.openshift.io/v1", "Route");
         if (isOpenshift) {
             cluster = new OpenshiftCluster(k8sClient);
         } else {
