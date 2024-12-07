@@ -11,6 +11,7 @@ import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.trustify.operator.Constants;
+import org.trustify.operator.TrustifyConfig;
 import org.trustify.operator.TrustifyImagesConfig;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
@@ -32,6 +33,12 @@ public class UIDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
 
     @Inject
     TrustifyImagesConfig trustifyImagesConfig;
+
+    @Inject
+    TrustifyConfig trustifyConfig;
+
+    @Inject
+    ServerService serverService;
 
     public UIDeployment() {
         super(Deployment.class);
@@ -120,7 +127,7 @@ public class UIDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
                                                 new ContainerPortBuilder()
                                                         .withName("http")
                                                         .withProtocol("TCP")
-                                                        .withContainerPort(Constants.HTTP_PORT)
+                                                        .withContainerPort(getDeploymentPort(cr))
                                                         .build()
                                         )
                                         .withLivenessProbe(new ProbeBuilder()
@@ -142,7 +149,7 @@ public class UIDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
                                         .withReadinessProbe(new ProbeBuilder()
                                                 .withHttpGet(new HTTPGetActionBuilder()
                                                         .withPath("/")
-                                                        .withNewPort(Constants.HTTP_PORT)
+                                                        .withNewPort(getDeploymentPort(cr))
                                                         .withScheme("HTTP")
                                                         .build()
                                                 )
@@ -153,17 +160,7 @@ public class UIDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
                                                 .withFailureThreshold(3)
                                                 .build()
                                         )
-                                        .withResources(new ResourceRequirementsBuilder()
-                                                .withRequests(Map.of(
-                                                        "cpu", new Quantity(CRDUtils.getValueFromSubSpec(resourcesLimitSpec, TrustifySpec.ResourcesLimitSpec::cpuRequest).orElse("100m")),
-                                                        "memory", new Quantity(CRDUtils.getValueFromSubSpec(resourcesLimitSpec, TrustifySpec.ResourcesLimitSpec::memoryRequest).orElse("350Mi"))
-                                                ))
-                                                .withLimits(Map.of(
-                                                        "cpu", new Quantity(CRDUtils.getValueFromSubSpec(resourcesLimitSpec, TrustifySpec.ResourcesLimitSpec::cpuLimit).orElse("500m")),
-                                                        "memory", new Quantity(CRDUtils.getValueFromSubSpec(resourcesLimitSpec, TrustifySpec.ResourcesLimitSpec::memoryLimit).orElse("800Mi"))
-                                                ))
-                                                .build()
-                                        )
+                                        .withResources(CRDUtils.getResourceRequirements(resourcesLimitSpec, trustifyConfig))
                                         .build()
                                 )
                                 .build()
@@ -185,7 +182,7 @@ public class UIDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
                         .build(),
                 new EnvVarBuilder()
                         .withName("TRUSTIFY_API_URL")
-                        .withValue(ServerService.getServiceUrl(cr))
+                        .withValue(serverService.getServiceUrl(cr))
                         .build(),
                 new EnvVarBuilder()
                         .withName("UI_INGRESS_PROXY_BODY_SIZE")
@@ -200,6 +197,10 @@ public class UIDeployment extends CRUDKubernetesDependentResource<Deployment, Tr
 
     public static String getDeploymentName(Trustify cr) {
         return cr.getMetadata().getName() + Constants.UI_DEPLOYMENT_SUFFIX;
+    }
+
+    public static int getDeploymentPort(Trustify cr) {
+        return 8080;
     }
 
     public static Map<String, String> getPodSelectorLabels(Trustify cr) {
