@@ -69,15 +69,60 @@ public record TrustifySpec(
         );
     }
 
-    public record DatabaseSpec(
-            @JsonPropertyDescription("Use external database.")
-            boolean externalDatabase,
+    public record ExternalDatabaseSpec(
+            @JsonPropertyDescription("The reference to a secret holding the username of the database user.")
+            SecretKeySelector usernameSecret,
 
+            @JsonPropertyDescription("The reference to a secret holding the password of the database user.")
+            SecretKeySelector passwordSecret,
+
+            @JsonPropertyDescription("The host of the database.")
+            String host,
+
+            @JsonPropertyDescription("The port of the database.")
+            String port,
+
+            @JsonPropertyDescription("The database name.")
+            String name
+    ) {
+    }
+
+    public record EmbeddedDatabaseSpec(
             @JsonPropertyDescription("Size of the PVC to create. Valid only if externalDatabase=false")
             String pvcSize,
 
             @JsonPropertyDescription("In this section you can configure resource limits settings. Valid only if externalDatabase=false")
-            ResourcesLimitSpec resourceLimits,
+            ResourcesLimitSpec resourceLimits
+    ) {
+    }
+
+    public record DatabaseSpec(
+            @JsonPropertyDescription("Use external database.")
+            boolean externalDatabase,
+
+            @JsonProperty("external")
+            ExternalDatabaseSpec externalDatabaseSpec,
+
+            @JsonProperty("embedded")
+            EmbeddedDatabaseSpec embeddedDatabaseSpec
+    ) {
+    }
+
+    public record HostnameSpec(
+            @JsonPropertyDescription("Hostname for the server.")
+            String hostname
+    ) {
+    }
+
+    public record HttpSpec(
+            @JsonPropertyDescription("A secret containing the TLS configuration for HTTPS. Reference: https://kubernetes.io/docs/concepts/configuration/secret/#tls-secrets.")
+            String tlsSecret
+    ) {
+    }
+
+    public record ExternalOidcDatabaseSpec(
+            @JsonPropertyDescription("The database vendor. E.g. 'postgres'")
+            String vendor,
 
             @JsonPropertyDescription("The reference to a secret holding the username of the database user.")
             SecretKeySelector usernameSecret,
@@ -96,14 +141,26 @@ public record TrustifySpec(
     ) {
     }
 
-    public record HostnameSpec(
-            @JsonPropertyDescription("Hostname for the server.")
-            String hostname
+    public record EmbeddedOidcSpec(
+            @JsonPropertyDescription("A secret containing the TLS configuration for OIDC - HTTPS. Reference: https://kubernetes.io/docs/concepts/configuration/secret/#tls-secrets.")
+            String tlsSecret,
+
+            boolean externalDatabase,
+
+            @JsonProperty("externalDatabaseSpec")
+            ExternalOidcDatabaseSpec externalDatabaseSpec,
+
+            @JsonProperty("embeddedDatabaseSpec")
+            EmbeddedDatabaseSpec embeddedDatabaseSpec
     ) {
     }
 
-    public record HttpSpec(
-            @JsonPropertyDescription("A secret containing the TLS configuration for HTTPS. Reference: https://kubernetes.io/docs/concepts/configuration/secret/#tls-secrets.")
+    public record ExternalOidcSpec(
+            @JsonPropertyDescription("Oidc server url.")
+            String serverUrl,
+            @JsonPropertyDescription("Oidc client id for the UI.")
+            String uiClientId,
+            @JsonPropertyDescription("A secret containing the TLS configuration for OIDC - HTTPS. Reference: https://kubernetes.io/docs/concepts/configuration/secret/#tls-secrets.")
             String tlsSecret
     ) {
     }
@@ -111,12 +168,14 @@ public record TrustifySpec(
     public record OidcSpec(
             @JsonPropertyDescription("Enable Oidc Auth.")
             boolean enabled,
-            @JsonPropertyDescription("Oidc server url.")
-            String serverUrl,
-            @JsonPropertyDescription("Oidc client id for the UI.")
-            String uiClientId,
-            @JsonPropertyDescription("Oidc client id for the Server.")
-            String serverClientId
+
+            boolean externalServer,
+
+            @JsonProperty("embedded")
+            EmbeddedOidcSpec embeddedOidcSpec,
+
+            @JsonProperty("external")
+            ExternalOidcSpec externalOidcSpec
     ) {
     }
 

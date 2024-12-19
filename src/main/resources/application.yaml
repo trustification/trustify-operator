@@ -3,12 +3,13 @@ trustify:
   default-requested-cpu: 50m
   default-requested-memory: 64Mi
   default-limit-cpu: 1
-  default-limit-memory: 0.5Gi
+  default-limit-memory: 512Mi
+"%dev":
+  trustify:
+    default-pvc-size: 1G
 "%test":
-   trustify:
-     default-pvc-size: 1G
-     default-limit-cpu: 500m
-     default-limit-memory: 512Mi
+  trustify:
+    default-pvc-size: 1G
 # Operator config
 related:
   image:
@@ -18,6 +19,8 @@ related:
     pull-policy: Always
 # Quarkus config
 quarkus:
+  qute:
+    suffixes: yaml
   container-image:
     registry: ghcr.io
     tag: v${quarkus.application.version}

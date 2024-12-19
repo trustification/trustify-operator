@@ -42,6 +42,55 @@ jobs:
           KUBERNETES_VERSION: ${{ matrix.kubernetes_version }}
         run: mvn verify
 
+  kind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+          cache: "maven"
+      - name: Install Kind
+        run: |
+          go install sigs.k8s.io/kind@v0.26.0
+          make start-kind
+      - name: Install OLM
+        run: |
+          curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.22.0/install.sh | bash -s v0.30.0
+      - name: Test
+        env:
+          KUBERNETES_VERSION: ${{ matrix.kubernetes_version }}
+        run: |
+          export HOST_KUBERNETES_CONFIG_FILE=/home/$USER/.kube/config
+          echo "Using ${HOST_KUBERNETES_CONFIG_FILE} as host k8s"
+          mvn verify
+
+  minikube:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+          cache: "maven"
+      - name: start minikube
+        uses: trustification/trustify-operator/.github/actions/start-minikube@main
+        with:
+          memory: "max"
+          cpus: "max"
+      - name: Install OLM
+        run: |
+          curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.22.0/install.sh | bash -s v0.30.0
+      - name: Test
+        env:
+          KUBERNETES_VERSION: ${{ matrix.kubernetes_version }}
+        run: |
+          export HOST_KUBERNETES_CONFIG_FILE=/home/$USER/.kube/config
+          echo "Using ${HOST_KUBERNETES_CONFIG_FILE} as host k8s"
+          mvn verify
+
   crc:
     runs-on: ubuntu-latest
     strategy:
@@ -87,7 +136,7 @@ jobs:
       - name: Setup and Start the crc
         run: |
           sudo -su $USER crc setup
-          sudo -su $USER crc start
+          sudo -su $USER crc start --memory 11264
           sleep 60
       - name: Copy OpenShift client
         run: sudo cp /home/$USER/.crc/bin/oc/oc /usr/bin/
@@ -100,7 +149,7 @@ jobs:
         run: |
           export HOST_KUBERNETES_CONFIG_FILE=/home/$USER/.kube/config
           echo "Using ${HOST_KUBERNETES_CONFIG_FILE} as host k8s"
-          mvn verify
+          mvn verify -DexcludedGroups=heavy
 
   build-operator-bundle:
     runs-on: ubuntu-latest

@@ -4,13 +4,12 @@ import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
-import jakarta.enterprise.context.ApplicationScoped;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
+import org.trustify.operator.cdrs.v2alpha1.server.ServerReconcilePreCondition;
 import org.trustify.operator.cdrs.v2alpha1.server.db.deployment.DBDeploymentReadyPostCondition;
 import org.trustify.operator.cdrs.v2alpha1.server.utils.ServerUtils;
 
-@ApplicationScoped
-public class ServerDeploymentReconcilePreCondition implements Condition<Deployment, Trustify> {
+public class ServerDeploymentReconcilePreCondition extends ServerReconcilePreCondition implements Condition<Deployment, Trustify> {
 
     @Override
     public boolean isMet(DependentResource<Deployment, Trustify> dependentResource, Trustify cr, Context<Trustify> context) {
@@ -23,7 +22,7 @@ public class ServerDeploymentReconcilePreCondition implements Condition<Deployme
             }
         }
 
-        return true;
+        return super.isMet(cr, context);
     }
 
 }
