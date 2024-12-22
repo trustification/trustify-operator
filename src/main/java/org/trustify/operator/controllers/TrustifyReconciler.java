@@ -202,7 +202,7 @@ public class TrustifyReconciler implements Reconciler<Trustify>, Cleaner<Trustif
         boolean isKcRequired = KeycloakUtils.isKeycloakRequired(cr);
         if (isKcRequired) {
             // Keycloak Operator
-            boolean kcSubscriptionExists = keycloakOperatorService.subscriptionExists(cr);
+            boolean kcSubscriptionExists = keycloakOperatorService.getCurrentInstance(cr).isPresent();
             if (!kcSubscriptionExists) {
                 logger.info("Installing Keycloak Operator");
                 keycloakOperatorService.createSubscription(cr);
