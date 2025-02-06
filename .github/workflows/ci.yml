@@ -8,7 +8,7 @@ on:
   pull_request:
     branches:
       - "main"
-      - "release-*"
+      - "release/*"
 
 concurrency:
   group: trustify-operator-ci-${{ github.ref }}
