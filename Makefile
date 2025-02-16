@@ -141,7 +141,7 @@ ifeq (,$(shell which opm 2>/dev/null))
 	@{ \
 	set -e ;\
 	mkdir -p $(dir $(OPM)) ;\
-	curl -sSLo $(OPM) https://github.com/operator-framework/operator-registry/releases/download/v1.30.0/$(OS)-$(ARCH)-opm ;\
+	curl -sSLo $(OPM) https://github.com/operator-framework/operator-registry/releases/download/v1.49.0/$(OS)-$(ARCH)-opm ;\
 	chmod +x $(OPM) ;\
 	}
 else
@@ -181,6 +181,15 @@ catalog-push: ## Push a catalog image.
 .PHONY: start-minikube
 start-minikube:
 	bash hack/start-minikube.sh
+
+.PHONY: start-kind
+start-kind:
+	kind create cluster --config scripts/kind/config.yaml
+	kubectl apply -f https://kind.sigs.k8s.io/examples/ingress/deploy-ingress-nginx.yaml
+
+.PHONY: start-crc
+start-crc:
+	crc start --cpus 8 --memory 32768 --disk-size 80
 
 .PHONY: install-trustify
 install-trustify:

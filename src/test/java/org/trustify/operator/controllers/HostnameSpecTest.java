@@ -29,6 +29,11 @@ public class HostnameSpecTest extends ReconcilerBaseTest {
                 null,
                 null,
                 null,
+                null,
+                null,
+                null,
+                null,
+                null,
                 new TrustifySpec.HostnameSpec(
                         host
                 ),
@@ -44,12 +49,12 @@ public class HostnameSpecTest extends ReconcilerBaseTest {
         // Verify resources
         Awaitility.await()
                 .ignoreException(NullPointerException.class)
-                .atMost(2, TimeUnit.MINUTES)
+                .atMost(3, TimeUnit.MINUTES)
                 .untilAsserted(() -> {
                     verifyDatabase(trustify);
-                    verifyServer(trustify);
+                    verifyTrustify(trustify);
                     verifyUI(trustify);
-                    verifyIngress(trustify);
+                    verifyIngress(trustify, false, false);
 
                     // Ingress
                     final var ingress = client.network().v1().ingresses()

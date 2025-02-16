@@ -1,17 +1,30 @@
 trustify:
   default-pvc-size: 10G
+  default-requested-cpu: 50m
+  default-requested-memory: 64Mi
+  default-limit-cpu: 1
+  default-limit-memory: 512Mi
+"%dev":
+  trustify:
+    default-pvc-size: 1G
 "%test":
-   trustify:
-     default-pvc-size: 1G
+  trustify:
+    default-pvc-size: 1G
 # Operator config
 related:
   image:
     ui: ${RELATED_IMAGE_UI:ghcr.io/trustification/trustify-ui:latest}
     server: ${RELATED_IMAGE_SERVER:ghcr.io/trustification/trustd:latest}
     db: ${RELATED_IMAGE_DB:quay.io/sclorg/postgresql-15-c9s:latest}
+    keycloak: ${RELATED_IMAGE_KEYCLOAK:ghcr.io/trustification/trustify-keycloak:latest}
     pull-policy: Always
 # Quarkus config
 quarkus:
+  native:
+    resources:
+      includes: realm.json
+  qute:
+    suffixes: yaml
   container-image:
     registry: ghcr.io
     tag: v${quarkus.application.version}
@@ -36,6 +49,7 @@ quarkus:
         related-image-ui: ${related.image.ui}
         related-image-server: ${related.image.server}
         related-image-db: ${related.image.db}
+        related-image-keycloak: ${related.image.keycloak}
     resources:
       requests:
         memory: 64Mi

@@ -21,7 +21,7 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - "persistentvolumeclaims"
+  - "services"
   verbs:
   - "create"
   - "delete"
@@ -34,6 +34,30 @@ rules:
   - "apps"
   resources:
   - "deployments"
+  verbs:
+  - "create"
+  - "delete"
+  - "get"
+  - "list"
+  - "patch"
+  - "update"
+  - "watch"
+- apiGroups:
+  - "apps"
+  resources:
+  - "statefulsets"
+  verbs:
+  - "create"
+  - "delete"
+  - "get"
+  - "list"
+  - "patch"
+  - "update"
+  - "watch"
+- apiGroups:
+  - ""
+  resources:
+  - "configmaps"
   verbs:
   - "create"
   - "delete"
@@ -57,7 +81,7 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - "services"
+  - "persistentvolumeclaims"
   verbs:
   - "create"
   - "delete"

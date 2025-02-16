@@ -12,6 +12,16 @@ import io.quarkiverse.operatorsdk.annotations.SharedCSVMetadata;
                         verbs = {"*"}
                 ),
                 @CSVMetadata.PermissionRule(
+                        apiGroups = {"k8s.keycloak.org"},
+                        resources = {"keycloaks", "keycloakrealmimports"},
+                        verbs = {"*"}
+                ),
+                @CSVMetadata.PermissionRule(
+                        apiGroups = {"operators.coreos.com"},
+                        resources = {"subscriptions", "operatorgroups", "clusterserviceversions"},
+                        verbs = {"*"}
+                ),
+                @CSVMetadata.PermissionRule(
                         apiGroups = {"route.openshift.io"},
                         resources = {"routes"},
                         verbs = {"*"}
@@ -87,15 +97,15 @@ import io.quarkiverse.operatorsdk.annotations.SharedCSVMetadata;
                 categories = "Application Runtime",
                 capabilities = "Basic Install",
                 almExamples = """                                      
-                [{
-                  "apiVersion": "org.trustify/v1alpha1",
-                  "kind": "Trustify",
-                  "metadata": {
-                    "name": "myapp"
-                  },
-                  "spec": { }
-                }]
-                """
+                        [{
+                          "apiVersion": "org.trustify/v1alpha1",
+                          "kind": "Trustify",
+                          "metadata": {
+                            "name": "myapp"
+                          },
+                          "spec": { }
+                        }]
+                        """
         ),
         minKubeVersion = "1.23.0"
 )

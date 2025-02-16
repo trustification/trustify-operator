@@ -29,7 +29,7 @@ public class DatabaseSpecTest extends ReconcilerBaseTest {
 
         Awaitility.await()
                 .ignoreException(NullPointerException.class)
-                .atMost(2, TimeUnit.MINUTES)
+                .atMost(3, TimeUnit.MINUTES)
                 .untilAsserted(() -> {
                     final var statefulSet = client.apps()
                             .statefulSets()
@@ -57,15 +57,24 @@ public class DatabaseSpecTest extends ReconcilerBaseTest {
                 null,
                 null,
                 null,
+                null,
+                null,
+                null,
+                null,
+                null,
                 new TrustifySpec.DatabaseSpec(
                         true,
-                        null,
-                        null,
-                        new SecretKeySelector("username", "postgresql-db", false),
-                        new SecretKeySelector("password", "postgresql-db", false),
-                        "postgresql-db." + getNamespaceName() + ".svc",
-                        "5432",
-                        "database"
+                        new TrustifySpec.ExternalDatabaseSpec(
+                                new SecretKeySelector("username", "postgresql-db", false),
+                                new SecretKeySelector("password", "postgresql-db", false),
+                                "postgresql-db." + getNamespaceName() + ".svc",
+                                "5432",
+                                "database",
+                                null,
+                                null,
+                                null
+                        ),
+                        null
                 ),
                 null,
                 null,
@@ -80,7 +89,7 @@ public class DatabaseSpecTest extends ReconcilerBaseTest {
         // Verify resources
         Awaitility.await()
                 .ignoreException(NullPointerException.class)
-                .atMost(2, TimeUnit.MINUTES)
+                .atMost(3, TimeUnit.MINUTES)
                 .untilAsserted(() -> {
                     // Database should not be created
                     final var dbDeployment = client.apps()
@@ -90,9 +99,9 @@ public class DatabaseSpecTest extends ReconcilerBaseTest {
                             .get();
                     Assertions.assertNull(dbDeployment, "DB should not be created as an external one is used");
 
-                    verifyServer(trustify);
+                    verifyTrustify(trustify);
                     verifyUI(trustify);
-                    verifyIngress(trustify);
+                    verifyIngress(trustify, true, false);
                 });
     }
 
@@ -106,13 +115,13 @@ public class DatabaseSpecTest extends ReconcilerBaseTest {
                 null,
                 null,
                 null,
+                null,
+                null,
+                null,
+                null,
+                null,
                 new TrustifySpec.DatabaseSpec(
                         false,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
                         null,
                         null
                 ),
@@ -129,12 +138,12 @@ public class DatabaseSpecTest extends ReconcilerBaseTest {
         // Verify resources
         Awaitility.await()
                 .ignoreException(NullPointerException.class)
-                .atMost(2, TimeUnit.MINUTES)
+                .atMost(3, TimeUnit.MINUTES)
                 .untilAsserted(() -> {
                     verifyDatabase(trustify);
-                    verifyServer(trustify);
+                    verifyTrustify(trustify);
                     verifyUI(trustify);
-                    verifyIngress(trustify);
+                    verifyIngress(trustify, true, false);
                 });
     }
 

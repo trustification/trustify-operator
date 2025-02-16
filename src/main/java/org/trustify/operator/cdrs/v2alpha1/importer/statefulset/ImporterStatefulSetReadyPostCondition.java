@@ -1,15 +1,16 @@
-package org.trustify.operator.cdrs.v2alpha1.server.db.utils;
+package org.trustify.operator.cdrs.v2alpha1.importer.statefulset;
 
-import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.apps.StatefulSet;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
+import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
-import org.trustify.operator.cdrs.v2alpha1.server.db.deployment.DBDeploymentDiscriminator;
 
-public class DBUtils {
+public class ImporterStatefulSetReadyPostCondition implements Condition<StatefulSet, Trustify> {
 
-    public static boolean isDeploymentReady(DependentResource<Deployment, Trustify> dependentResource, Trustify primary, Context<Trustify> context) {
-        return context.getSecondaryResource(Deployment.class, new DBDeploymentDiscriminator())
+    @Override
+    public boolean isMet(DependentResource<StatefulSet, Trustify> dependentResource, Trustify cr, Context<Trustify> context) {
+        return context.getSecondaryResource(StatefulSet.class, new ImporterStatefulSetDiscriminator())
                 .map(deployment -> {
                     final var status = deployment.getStatus();
                     if (status != null) {

@@ -3,36 +3,28 @@ package org.trustify.operator.cdrs.v2alpha1.server.deployment;
 import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.api.model.apps.*;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
-import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.Matcher;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
-import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.trustify.operator.Constants;
-import org.trustify.operator.TrustifyImagesConfig;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
-import org.trustify.operator.cdrs.v2alpha1.TrustifySpec;
 import org.trustify.operator.cdrs.v2alpha1.server.db.deployment.DBDeployment;
-import org.trustify.operator.controllers.TrustifyDistConfigurator;
-import org.trustify.operator.utils.CRDUtils;
+import org.trustify.operator.controllers.ResourceConfigurator;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @KubernetesDependent(labelSelector = ServerDeployment.LABEL_SELECTOR, resourceDiscriminator = ServerDeploymentDiscriminator.class)
 @ApplicationScoped
 public class ServerDeployment extends CRUDKubernetesDependentResource<Deployment, Trustify>
-        implements Matcher<Deployment, Trustify>, Condition<Deployment, Trustify> {
+        implements Matcher<Deployment, Trustify> {
 
     public static final String LABEL_SELECTOR = "app.kubernetes.io/managed-by=trustify-operator,component=server";
 
     @Inject
-    TrustifyImagesConfig trustifyImagesConfig;
+    ServerDeploymentConfigurator distConfigurator;
 
     public ServerDeployment() {
         super(Deployment.class);
@@ -40,103 +32,68 @@ public class ServerDeployment extends CRUDKubernetesDependentResource<Deployment
 
     @Override
     protected Deployment desired(Trustify cr, Context<Trustify> context) {
-        TrustifyDistConfigurator distConfigurator = new TrustifyDistConfigurator(cr);
         return newDeployment(cr, context, distConfigurator);
     }
 
     @Override
     public Result<Deployment> match(Deployment actual, Trustify cr, Context<Trustify> context) {
-        final var container = actual.getSpec()
-                .getTemplate().getSpec().getContainers()
-                .stream()
-                .findFirst();
+        boolean matchDesiredInstances = getDesiredInstances(cr) == actual.getSpec().getReplicas();
+        if (!matchDesiredInstances) {
+            return Result.nonComputed(false);
+        }
 
-        return Result.nonComputed(container
-                .map(c -> c.getImage() != null)
-                .orElse(false)
-        );
+        ResourceConfigurator.Config config = distConfigurator.configureDeployment(cr, context);
+        boolean match = config.match(actual.getSpec().getTemplate().getSpec());
+        return Result.nonComputed(match);
     }
 
-    @Override
-    public boolean isMet(DependentResource<Deployment, Trustify> dependentResource, Trustify primary, Context<Trustify> context) {
-        return context.getSecondaryResource(Deployment.class, new ServerDeploymentDiscriminator())
-                .map(deployment -> {
-                    final var status = deployment.getStatus();
-                    if (status != null) {
-                        final var readyReplicas = status.getReadyReplicas();
-                        return readyReplicas != null && readyReplicas >= 1;
-                    }
-                    return false;
-                })
-                .orElse(false);
+    private int getDesiredInstances(Trustify cr) {
+        return Optional.ofNullable(cr.getSpec().serverInstances())
+                .orElse(1);
     }
 
-    @SuppressWarnings("unchecked")
-    private Deployment newDeployment(Trustify cr, Context<Trustify> context, TrustifyDistConfigurator distConfigurator) {
-        final var contextLabels = (Map<String, String>) context.managedDependentResourceContext()
-                .getMandatory(Constants.CONTEXT_LABELS_KEY, Map.class);
-
+    private Deployment newDeployment(Trustify cr, Context<Trustify> context, ServerDeploymentConfigurator distConfigurator) {
         return new DeploymentBuilder()
-                .withNewMetadata()
-                .withName(getDeploymentName(cr))
-                .withNamespace(cr.getMetadata().getNamespace())
-                .withLabels(contextLabels)
-                .addToLabels("component", "server")
-                .withAnnotations(Map.of("app.openshift.io/connects-to", """
-                        [{"apiVersion": "apps/v1", "kind":"Deployment", "name": "%s"}]
-                        """.formatted(DBDeployment.getDeploymentName(cr))
-                ))
-                .withOwnerReferences(CRDUtils.getOwnerReference(cr))
-                .endMetadata()
+                .withMetadata(Constants.metadataBuilder
+                        .apply(new Constants.Resource(getDeploymentName(cr), LABEL_SELECTOR, cr))
+                        .withAnnotations(Map.of("app.openshift.io/connects-to", """
+                                [{"apiVersion": "apps/v1", "kind":"Deployment", "name": "%s"}]
+                                """.formatted(DBDeployment.getDeploymentName(cr))
+                        ))
+                        .build()
+                )
                 .withSpec(getDeploymentSpec(cr, context, distConfigurator))
                 .build();
     }
 
-    @SuppressWarnings("unchecked")
-    private DeploymentSpec getDeploymentSpec(Trustify cr, Context<Trustify> context, TrustifyDistConfigurator distConfigurator) {
-        final var contextLabels = (Map<String, String>) context.managedDependentResourceContext()
-                .getMandatory(Constants.CONTEXT_LABELS_KEY, Map.class);
-
-        Map<String, String> selectorLabels = Constants.SERVER_SELECTOR_LABELS;
-        String image = Optional.ofNullable(cr.getSpec().serverImage()).orElse(trustifyImagesConfig.serverImage());
-        String imagePullPolicy = Optional.ofNullable(cr.getSpec().imagePullPolicy()).orElse(trustifyImagesConfig.imagePullPolicy());
-
-        List<EnvVar> envVars = distConfigurator.getAllEnvVars();
-        List<Volume> volumes = distConfigurator.getAllVolumes();
-        List<VolumeMount> volumeMounts = distConfigurator.getAllVolumeMounts();
-
-        TrustifySpec.ResourcesLimitSpec resourcesLimitSpec = CRDUtils.getValueFromSubSpec(cr.getSpec(), TrustifySpec::serverResourceLimitSpec)
-                .orElse(null);
+    private DeploymentSpec getDeploymentSpec(Trustify cr, Context<Trustify> context, ServerDeploymentConfigurator distConfigurator) {
+        ServerDeploymentConfigurator.Config config = distConfigurator.configureDeployment(cr, context);
 
         return new DeploymentSpecBuilder()
                 .withStrategy(new DeploymentStrategyBuilder()
                         .withType("Recreate")
                         .build()
                 )
-                .withReplicas(1)
+                .withReplicas(getDesiredInstances(cr))
                 .withSelector(new LabelSelectorBuilder()
-                        .withMatchLabels(selectorLabels)
+                        .withMatchLabels(getPodSelectorLabels(cr))
                         .build()
                 )
                 .withTemplate(new PodTemplateSpecBuilder()
                         .withNewMetadata()
-                        .withLabels(Stream
-                                .concat(contextLabels.entrySet().stream(), selectorLabels.entrySet().stream())
-                                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
-                        )
+                        .addToLabels(getPodSelectorLabels(cr))
                         .endMetadata()
                         .withSpec(new PodSpecBuilder()
                                 .withRestartPolicy("Always")
                                 .withTerminationGracePeriodSeconds(70L)
                                 .withImagePullSecrets(cr.getSpec().imagePullSecrets())
-//                                .withServiceAccountName(Constants.TRUSTI_NAME)
                                 .withInitContainers(new ContainerBuilder()
                                         .withName("migrate")
-                                        .withImage(image)
-                                        .withImagePullPolicy(imagePullPolicy)
-                                        .withEnv(envVars)
-                                        .withCommand(
-                                                "/usr/local/bin/trustd",
+                                        .withImage(config.image())
+                                        .withImagePullPolicy(config.imagePullPolicy())
+                                        .withEnv(config.allEnvVars())
+                                        .withCommand("/usr/local/bin/trustd")
+                                        .withArgs(
                                                 "db",
                                                 "migrate"
                                         )
@@ -144,37 +101,30 @@ public class ServerDeployment extends CRUDKubernetesDependentResource<Deployment
                                 )
                                 .withContainers(new ContainerBuilder()
                                         .withName(Constants.TRUSTI_SERVER_NAME)
-                                        .withImage(image)
-                                        .withImagePullPolicy(imagePullPolicy)
-                                        .withEnv(envVars)
-                                        .withCommand(
-                                                "/usr/local/bin/trustd",
+                                        .withImage(config.image())
+                                        .withImagePullPolicy(config.imagePullPolicy())
+                                        .withEnv(config.allEnvVars())
+                                        .withCommand("/usr/local/bin/trustd")
+                                        .withArgs(
                                                 "api",
-                                                "--sample-data",
-                                                "--infrastructure-enabled",
-                                                "--infrastructure-bind=0.0.0.0:" + Constants.HTTP_INFRAESTRUCTURE_PORT
+                                                "--sample-data"
                                         )
                                         .withPorts(
                                                 new ContainerPortBuilder()
                                                         .withName("http")
                                                         .withProtocol("TCP")
-                                                        .withContainerPort(Constants.HTTP_PORT)
+                                                        .withContainerPort(getDeploymentPort(cr))
                                                         .build(),
-//                                                new ContainerPortBuilder()
-//                                                        .withName("https")
-//                                                        .withProtocol("TCP")
-//                                                        .withContainerPort(8443)
-//                                                        .build()
                                                 new ContainerPortBuilder()
                                                         .withName("http-infra")
                                                         .withProtocol("TCP")
-                                                        .withContainerPort(Constants.HTTP_INFRAESTRUCTURE_PORT)
+                                                        .withContainerPort(getDeploymentInfrastructurePort(cr))
                                                         .build()
                                         )
                                         .withLivenessProbe(new ProbeBuilder()
                                                 .withHttpGet(new HTTPGetActionBuilder()
                                                         .withPath("/health/live")
-                                                        .withNewPort(Constants.HTTP_INFRAESTRUCTURE_PORT)
+                                                        .withNewPort(getDeploymentInfrastructurePort(cr))
                                                         .withScheme("HTTP")
                                                         .build()
                                                 )
@@ -188,7 +138,7 @@ public class ServerDeployment extends CRUDKubernetesDependentResource<Deployment
                                         .withReadinessProbe(new ProbeBuilder()
                                                 .withHttpGet(new HTTPGetActionBuilder()
                                                         .withPath("health/ready")
-                                                        .withNewPort(Constants.HTTP_INFRAESTRUCTURE_PORT)
+                                                        .withNewPort(getDeploymentInfrastructurePort(cr))
                                                         .withScheme("HTTP")
                                                         .build()
                                                 )
@@ -202,7 +152,7 @@ public class ServerDeployment extends CRUDKubernetesDependentResource<Deployment
                                         .withStartupProbe(new ProbeBuilder()
                                                 .withHttpGet(new HTTPGetActionBuilder()
                                                         .withPath("/health/startup")
-                                                        .withNewPort(Constants.HTTP_INFRAESTRUCTURE_PORT)
+                                                        .withNewPort(getDeploymentInfrastructurePort(cr))
                                                         .withScheme("HTTP")
                                                         .build()
                                                 )
@@ -213,21 +163,11 @@ public class ServerDeployment extends CRUDKubernetesDependentResource<Deployment
                                                 .withFailureThreshold(3)
                                                 .build()
                                         )
-                                        .withVolumeMounts(volumeMounts)
-                                        .withResources(new ResourceRequirementsBuilder()
-                                                .withRequests(Map.of(
-                                                        "cpu", new Quantity(CRDUtils.getValueFromSubSpec(resourcesLimitSpec, TrustifySpec.ResourcesLimitSpec::cpuRequest).orElse("50m")),
-                                                        "memory", new Quantity(CRDUtils.getValueFromSubSpec(resourcesLimitSpec, TrustifySpec.ResourcesLimitSpec::memoryRequest).orElse("64Mi"))
-                                                ))
-                                                .withLimits(Map.of(
-                                                        "cpu", new Quantity(CRDUtils.getValueFromSubSpec(resourcesLimitSpec, TrustifySpec.ResourcesLimitSpec::cpuLimit).orElse("250m")),
-                                                        "memory", new Quantity(CRDUtils.getValueFromSubSpec(resourcesLimitSpec, TrustifySpec.ResourcesLimitSpec::memoryLimit).orElse("256Mi"))
-                                                ))
-                                                .build()
-                                        )
+                                        .withVolumeMounts(config.allVolumeMounts())
+                                        .withResources(config.resourceRequirements())
                                         .build()
                                 )
-                                .withVolumes(volumes)
+                                .withVolumes(config.allVolumes())
                                 .build()
                         )
                         .build()
@@ -237,5 +177,20 @@ public class ServerDeployment extends CRUDKubernetesDependentResource<Deployment
 
     public static String getDeploymentName(Trustify cr) {
         return cr.getMetadata().getName() + Constants.SERVER_DEPLOYMENT_SUFFIX;
+    }
+
+    public static int getDeploymentPort(Trustify cr) {
+        return 8080;
+    }
+
+    public static int getDeploymentInfrastructurePort(Trustify cr) {
+        return 9010;
+    }
+
+
+    public static Map<String, String> getPodSelectorLabels(Trustify cr) {
+        return Map.of(
+                "trustify-operator/group", "server"
+        );
     }
 }

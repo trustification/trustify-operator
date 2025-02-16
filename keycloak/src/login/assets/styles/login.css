@@ -1,0 +1,38 @@
+.kc-social-grid .kc-social-icon-text {
+    left: 0;
+}
+
+.kc-social-icon-text {
+    left: 0;
+}
+
+.pf-v5-c-alert__title {
+    margin: 3px;
+}
+
+.pf-v5-theme-dark body {
+    color: #fff;
+}
+
+.pf-v5-theme-dark label {
+    color: #d8d8d8;
+}
+
+.ws-full-page-utils {
+    position: fixed;
+    bottom: 0;
+    padding: 1.5rem;
+    z-index: 600;
+
+    left: 0 !important;
+    right: auto !important;
+}
+
+.ws-full-page-utils::before {
+    position: absolute;
+    inset: 0;
+    content: "";
+    background-color: #383838;
+    opacity: 0.8;
+    box-shadow: inherit;
+}

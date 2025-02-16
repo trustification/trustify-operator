@@ -2,6 +2,7 @@ package org.trustify.operator.cdrs.v2alpha1.server.db.secret;
 
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
+import io.fabric8.kubernetes.api.model.SecretKeySelector;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.processing.dependent.Creator;
 import io.javaoperatorsdk.operator.processing.dependent.Matcher;
@@ -11,9 +12,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.trustify.operator.Constants;
 import org.trustify.operator.cdrs.v2alpha1.Trustify;
 import org.trustify.operator.utils.CRDUtils;
-
-import java.util.Map;
-import java.util.Random;
 
 @KubernetesDependent(labelSelector = DBSecret.LABEL_SELECTOR, resourceDiscriminator = DBSecretDiscriminator.class)
 @ApplicationScoped
@@ -36,21 +34,14 @@ public class DBSecret extends CRUDKubernetesDependentResource<Secret, Trustify> 
         return Matcher.Result.nonComputed(actual.getMetadata().getName().equals(desiredSecretName));
     }
 
-    @SuppressWarnings("unchecked")
     private Secret newSecret(Trustify cr, Context<Trustify> context) {
-        final var labels = (Map<String, String>) context.managedDependentResourceContext()
-                .getMandatory(Constants.CONTEXT_LABELS_KEY, Map.class);
-
         return new SecretBuilder()
-                .withNewMetadata()
-                .withName(getSecretName(cr))
-                .withNamespace(cr.getMetadata().getNamespace())
-                .withLabels(labels)
-                .addToLabels("component", "db")
-                .withOwnerReferences(CRDUtils.getOwnerReference(cr))
-                .endMetadata()
-                .addToStringData(Constants.DB_SECRET_USERNAME, generateRandomString(10))
-                .addToStringData(Constants.DB_SECRET_PASSWORD, generateRandomString(10))
+                .withMetadata(Constants.metadataBuilder
+                        .apply(new Constants.Resource(getSecretName(cr), LABEL_SELECTOR, cr))
+                        .build()
+                )
+                .addToStringData(getSecretUsernameKey(cr), generateRandomString(10))
+                .addToStringData(getSecretPasswordKey(cr), generateRandomString(10))
                 .build();
     }
 
@@ -58,15 +49,31 @@ public class DBSecret extends CRUDKubernetesDependentResource<Secret, Trustify> 
         return cr.getMetadata().getName() + Constants.DB_SECRET_SUFFIX;
     }
 
-    public static String generateRandomString(int targetStringLength) {
-        int leftLimit = 48; // numeral '0'
-        int rightLimit = 122; // letter 'z'
+    public static String getSecretUsernameKey(Trustify cr) {
+        return Constants.DB_SECRET_USERNAME;
+    }
 
-        Random random = new Random();
-        return random.ints(leftLimit, rightLimit + 1)
-                .filter(i -> (i <= 57 || i >= 65) && (i <= 90 || i >= 97))
-                .limit(targetStringLength)
-                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-                .toString();
+    public static String getSecretPasswordKey(Trustify cr) {
+        return Constants.DB_SECRET_PASSWORD;
+    }
+
+    public static SecretKeySelector getUsernameSecretKeySelector(Trustify cr) {
+        return new SecretKeySelector(
+                getSecretUsernameKey(cr),
+                getSecretName(cr),
+                false
+        );
+    }
+
+    public static SecretKeySelector getPasswordSecretKeySelector(Trustify cr) {
+        return new SecretKeySelector(
+                getSecretPasswordKey(cr),
+                getSecretName(cr),
+                false
+        );
+    }
+
+    public static String generateRandomString(int targetStringLength) {
+        return CRDUtils.generateRandomString(targetStringLength);
     }
 }
