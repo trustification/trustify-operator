@@ -182,3 +182,5 @@ jobs:
     uses: trustification/trustify-ci/.github/workflows/global-ci.yml@main
     with:
       operator_bundle: ttl.sh/trustify-operator-bundle-${{ github.sha }}:2h
+      api_tests_ref: release/0.2.z
+      ui_tests_ref: release/0.2.z
