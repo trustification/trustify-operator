@@ -44,7 +44,7 @@ spec:
         - name: "RELATED_IMAGE_UI"
           value: "ghcr.io/trustification/trustify-ui:latest"
         - name: "RELATED_IMAGE_DB"
-          value: "quay.io/sclorg/postgresql-15-c9s:latest"
+          value: "quay.io/sclorg/postgresql-16-c9s:latest"
         - name: "QUARKUS_OPERATOR_SDK_CONTROLLERS_TRUSTIFY_NAMESPACES"
           value: {{ .Values.watchNamespaces }}
         image: "ghcr.io/trustification/trustify-operator:{{ include "app.tag" . }}"

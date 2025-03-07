@@ -88,7 +88,7 @@ jobs:
           branch: ${{github.ref_name}}
 
   release:
-    needs: [ prepare ]
+    needs: [ identify-app-tag, prepare ]
     runs-on: ubuntu-latest
     env:
       TAG: ${{ needs.identify-app-tag.outputs.tag }}
@@ -151,7 +151,7 @@ jobs:
           branch: ${{github.ref_name}}
 
   publish-bundle:
-    needs: [ release ]
+    needs: [ identify-app-tag, release ]
     runs-on: ubuntu-latest
     steps:
       - name: wait for image
