@@ -4,10 +4,10 @@ trustify:
   default-requested-memory: 64Mi
   default-limit-cpu: 1
   default-limit-memory: 512Mi
-"%dev":
+'%dev':
   trustify:
     default-pvc-size: 1G
-"%test":
+'%test':
   trustify:
     default-pvc-size: 1G
 # Operator config
