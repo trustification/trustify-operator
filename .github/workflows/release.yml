@@ -57,8 +57,8 @@ jobs:
           cache: maven
       - name: Install YQ
         run: |
-          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
-          chmod +x /usr/bin/yq
+          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
+          sudo chmod +x /usr/bin/yq
       - name: Prepare application.yaml
         run: |
           yq e -P -i '.related.image.ui=strenv(IMAGE_UI)' src/main/resources/application.yaml
@@ -120,8 +120,8 @@ jobs:
           path: 'jreleaser-log.tgz'
       - name: Install YQ
         run: |
-          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
-          chmod +x /usr/bin/yq
+          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
+          sudo chmod +x /usr/bin/yq
       - name: Restore application.yaml
         run: |
           IMAGE_UI=$(echo '${RELATED_IMAGE_UI:'"ghcr.io/trustification/trustify-ui:${TAG}"'}')
