@@ -1,5 +1,5 @@
 ---
 name: "trustify-operator"
-version: "1.0.0-SNAPSHOT"
+version: "0.1.0-alpha.9"
 apiVersion: "v2"
-appVersion: "latest"
+appVersion: "0.1.0-alpha.9"
