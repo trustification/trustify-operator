@@ -21,11 +21,32 @@ on:
         required: true
       image-db:
         description: "The Database container image"
-        default: "quay.io/sclorg/postgresql-15-c9s:latest"
+        default: "quay.io/sclorg/postgresql-16-c9s:latest"
+        required: true
+      image-keycloak:
+        description: "The Keycloak container image"
+        default: "ghcr.io/trustification/trustify-keycloak:latest"
         required: true
 
 jobs:
+  identify-app-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.define-tag.outputs.tag }}
+    steps:
+      - name: Define & sanitize tag
+        id: define-tag
+        shell: bash
+        run: |
+          tag=${{ github.ref == 'refs/heads/main' && 'latest' || github.ref_name }}
+          
+          # Replace "/" by "-" as "/" is not a valid character for a container tag
+          tag="${tag#release/}"
+          echo $tag
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
   prepare:
+    needs: [ identify-app-tag ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -43,10 +64,12 @@ jobs:
           yq e -P -i '.related.image.ui=strenv(IMAGE_UI)' src/main/resources/application.yaml
           yq e -P -i '.related.image.server=strenv(IMAGE_SERVER)' src/main/resources/application.yaml
           yq e -P -i '.related.image.db=strenv(IMAGE_DB)' src/main/resources/application.yaml
+          yq e -P -i '.related.image.keycloak=strenv(IMAGE_KEYCLOAK)' src/main/resources/application.yaml
         env:
           IMAGE_UI: ${{ github.event.inputs.image-ui }}
           IMAGE_SERVER: ${{ github.event.inputs.image-server }}
           IMAGE_DB: ${{ github.event.inputs.image-db }}
+          IMAGE_KEYCLOAK: ${{ github.event.inputs.image-keycloak }}
       - name: Prepare Chart.yaml
         run: |
           NEW_VERSION=$NEW_VERSION yq e -i '.version=strenv(NEW_VERSION)' helm/Chart.yaml
@@ -67,6 +90,8 @@ jobs:
   release:
     needs: [ prepare ]
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ needs.identify-app-tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -99,14 +124,19 @@ jobs:
           chmod +x /usr/bin/yq
       - name: Restore application.yaml
         run: |
-          yq e -P -i '.related.image.ui="${RELATED_IMAGE_UI:ghcr.io/trustification/trustify-ui:latest}"' src/main/resources/application.yaml
-          yq e -P -i '.related.image.server="${RELATED_IMAGE_SERVER:ghcr.io/trustification/trustd:latest}"' src/main/resources/application.yaml
-          yq e -P -i '.related.image.db="${RELATED_IMAGE_DB:quay.io/sclorg/postgresql-15-c9s:latest}"' src/main/resources/application.yaml
+          IMAGE_UI=$(echo '${RELATED_IMAGE_UI:'"ghcr.io/trustification/trustify-ui:${TAG}"'}')
+          IMAGE_SERVER=$(echo '${RELATED_IMAGE_SERVER:'"ghcr.io/trustification/trustd:${TAG}"'}')
+          IMAGE_DB=$(echo '${RELATED_IMAGE_DB:'"quay.io/sclorg/postgresql-16-c9s:latest"'}')
+          IMAGE_KEYCLOAK=$(echo '${RELATED_IMAGE_KEYCLOAK:'"ghcr.io/trustification/trustify-keycloak:${TAG}"'}')
+          
+          IMAGE_UI=$IMAGE_UI yq e -P -i '.related.image.ui=strenv(IMAGE_UI)' src/main/resources/application.yaml
+          IMAGE_SERVER=$IMAGE_SERVER yq e -P -i '.related.image.server=strenv(IMAGE_SERVER)' src/main/resources/application.yaml
+          IMAGE_DB=$IMAGE_DB yq e -P -i '.related.image.db=strenv(IMAGE_DB)' src/main/resources/application.yaml
+          IMAGE_KEYCLOAK=$IMAGE_KEYCLOAK yq e -P -i '.related.image.keycloak=strenv(IMAGE_KEYCLOAK)' src/main/resources/application.yaml
       - name: Restore Chart.yaml
         run: |
           NEXT_VERSION=$NEXT_VERSION yq e -i '.version=strenv(NEXT_VERSION)' helm/Chart.yaml
-          NEXT_VERSION=$NEXT_VERSION yq e -i '.appVersion=strenv(NEXT_VERSION)' helm/Chart.yaml
-          yq e -i '.appVersion="latest"' helm/Chart.yaml
+          TAG=$TAG yq e -i '.appVersion=strenv(TAG)' helm/Chart.yaml
         env:
           NEXT_VERSION: ${{ github.event.inputs.next }}
       - name: Set version ${{ github.event.inputs.next }}
