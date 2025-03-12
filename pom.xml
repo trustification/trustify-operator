@@ -18,7 +18,7 @@
         <surefire-plugin.version>3.2.5</surefire-plugin.version>
 
         <quarkus-sdk.version>6.8.5</quarkus-sdk.version>
-        <fabric8-plugin.version>6.13.4</fabric8-plugin.version>
+        <fabric8-plugin.version>6.13.5</fabric8-plugin.version>
     </properties>
 
     <dependencyManagement>
