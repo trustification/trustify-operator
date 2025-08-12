@@ -18,7 +18,7 @@ jobs:
   keycloak:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-node@v4
       - name: Use Node.js
         uses: actions/setup-node@v4
@@ -45,7 +45,7 @@ jobs:
           ]
       fail-fast: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-java@v4
         with:
           distribution: "temurin"
@@ -59,7 +59,7 @@ jobs:
   kind:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-java@v4
         with:
           distribution: "temurin"
@@ -83,7 +83,7 @@ jobs:
   minikube:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-java@v4
         with:
           distribution: "temurin"
@@ -112,7 +112,7 @@ jobs:
         preset: [ "openshift" ]
       fail-fast: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-java@v4
         with:
           distribution: "temurin"
@@ -171,7 +171,7 @@ jobs:
       IMG: ttl.sh/trustify-operator-${{ github.sha }}:2h
       BUNDLE_IMG: ttl.sh/trustify-operator-bundle-${{ github.sha }}:2h
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Create operator
 #        run: DOCKERFILE=Dockerfile.jvm make docker-build docker-push
         run: make docker-build docker-push

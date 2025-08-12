@@ -49,7 +49,7 @@ jobs:
     needs: [ identify-app-tag ]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-java@v4
         with:
           java-version: 21
@@ -93,7 +93,7 @@ jobs:
     env:
       TAG: ${{ needs.identify-app-tag.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: main
           fetch-depth: 0
@@ -167,7 +167,7 @@ jobs:
           docker create --name extract "ghcr.io/${{ github.repository_owner }}/trustify-operator-bundle:v${{ github.event.inputs.version }}" foo
 
       - name: Checkout community operators
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: k8s-operatorhub/community-operators
           path: community-operators
@@ -185,7 +185,7 @@ jobs:
           git diff
 
       - name: Checkout redhat community operators
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: redhat-openshift-ecosystem/community-operators-prod
           path: redhat-community-operators
